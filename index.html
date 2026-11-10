@@ -1,2663 +1,649 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة زيارات المطاعم | شركة نايف للأغذية</title>
-    <link rel="icon" href="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" type="image/jpeg">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', 'Arial', sans-serif;
-        }
-
-        :root {
-            --primary-color: #FF6E00;
-            --secondary-color: #2196F3;
-            --success-color: #4CAF50;
-            --danger-color: #f44336;
-            --warning-color: #ff9800;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
-            --gray-color: #6c757d;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            --border-radius: 8px;
-        }
-
-        body {
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-            min-height: 100vh;
-            padding-bottom: 100px;
-        }
-
-        .container {
-            width: 95%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-
-        /* شاشة تسجيل الدخول */
-        #login-page {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-        }
-
-        .login-container {
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 40px;
-            box-shadow: var(--shadow);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .login-logo {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid var(--primary-color);
-            margin-bottom: 20px;
-        }
-
-        .login-title {
-            color: var(--primary-color);
-            margin-bottom: 30px;
-            font-size: 1.8rem;
-        }
-
-        .search-users {
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        .users-list {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            box-shadow: var(--shadow);
-        }
-
-        .user-item {
-            padding: 10px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-            transition: background-color 0.2s;
-        }
-
-        .user-item:hover {
-            background-color: #f0f0f0;
-        }
-
-        .user-item.active {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .password-input {
-            margin-bottom: 20px;
-        }
-
-        .login-error {
-            color: var(--danger-color);
-            margin-top: 10px;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        /* رأس الصفحة */
-        header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 20px 0;
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-        }
-
-        .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .logo {
-            height: 60px;
-            width: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid white;
-        }
-
-        .company-name {
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .user-name {
-            font-weight: 600;
-        }
-
-        .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 8px 15px;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .nav-tabs {
-            display: flex;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            margin-top: 20px;
-            width: 100%;
-        }
-
-        .nav-tab {
-            flex: 1;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        .nav-tab:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .nav-tab.active {
-            background-color: white;
-            color: var(--primary-color);
-        }
-
-        /* الكروت الإحصائية العائمة */
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: transform 0.3s, box-shadow 0.3s;
-            animation: float 6s ease-in-out infinite;
-            animation-delay: calc(var(--i) * 1s);
-            position: relative;
-            overflow: hidden;
-            border-left: 5px solid var(--primary-color);
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .stat-info h3 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .stat-info p {
-            color: var(--gray-color);
-            font-size: 0.9rem;
-        }
-
-        /* الأقسام */
-        .section {
-            display: none;
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 25px;
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
-        }
-
-        .section.active {
-            display: block;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            color: var(--primary-color);
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eee;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .section-title i {
-            font-size: 1.3rem;
-        }
-
-        /* نماذج الإدخال */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--dark-color);
-        }
-
-        input, select, textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
-            font-size: 1rem;
-            transition: border 0.3s;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--primary-color);
-            outline: none;
-        }
-
-        textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: var(--border-radius);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #e65c00;
-        }
-
-        .btn-secondary {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: #0d8bf2;
-        }
-
-        .btn-success {
-            background-color: var(--success-color);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background-color: #3d8b40;
-        }
-
-        .btn-danger {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background-color: #d32f2f;
-        }
-
-        .btn-warning {
-            background-color: var(--warning-color);
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background-color: #e68900;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        /* الجداول */
-        .table-container {
-            overflow-x: auto;
-            margin-top: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 800px;
-        }
-
-        th, td {
-            padding: 15px;
-            text-align: right;
-            border-bottom: 1px solid #eee;
-        }
-
-        th {
-            background-color: #f8f9fa;
-            font-weight: 700;
-            color: var(--dark-color);
-            position: sticky;
-            top: 0;
-        }
-
-        tr:hover {
-            background-color: #f8f9fa;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .badge-success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .badge-warning {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-
-        .badge-info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .actions-cell {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .action-btn {
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            border: none;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        /* فلترة التقارير */
-        .filter-section {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: var(--border-radius);
-            margin-bottom: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: flex-end;
-        }
-
-        .filter-group {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        /* الصفحات */
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        /* رسائل التنبيه */
-        .alert {
-            padding: 15px;
-            border-radius: var(--border-radius);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border-left: 5px solid #28a745;
-        }
-
-        .alert-warning {
-            background-color: #fff3cd;
-            color: #856404;
-            border-left: 5px solid #ffc107;
-        }
-
-        .alert-info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border-left: 5px solid #17a2b8;
-        }
-
-        .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-            border-left: 5px solid #dc3545;
-        }
-
-        /* PDF Template */
-        .pdf-template {
-            position: fixed;
-            left: -10000px;
-            top: -10000px;
-            width: 794px;
-            height: 1123px;
-            background: white;
-            padding: 10px;
-            box-sizing: border-box;
-            z-index: -1000;
-            font-size: 12px;
-            font-family: 'Times New Roman', serif;
-        }
-
-        /* توقيع المطور */
-        .signature-card {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: linear-gradient(135deg, #FF6E00, #2196F3);
-            color: white;
-            padding: 10.5px 17.5px;
-            border-radius: 8.5px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 0.8rem;
-            font-weight: 600;
-            z-index: 1000;
-            animation: float 6s ease-in-out infinite;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 2px solid rgba(255,255,255,0.2);
-        }
-
-        .signature-card:hover { 
-            transform: scale(1.05); 
-            box-shadow: 0 12px 35px rgba(0,0,0,0.4); 
-        }
-
-        @keyframes float { 
-            0% { transform: translateY(0px); } 
-            50% { transform: translateY(-15px); } 
-            100% { transform: translateY(0px); } 
-        }
-
-        .signature-card::before {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
-            background: linear-gradient(135deg, #80EF80, #2196F3);
-            border-radius: 14px;
-            z-index: -1;
-            animation: borderGlow 3s linear infinite;
-            background-size: 400%;
-        }
-
-        @keyframes borderGlow { 
-            0% { background-position: 0% 50%; } 
-            50% { background-position: 100% 50%; } 
-            100% { background-position: 0% 50%; } 
-        }
-
-        .signature-card .name { 
-            font-size: 0.95rem; 
-            font-weight: 700; 
-            margin-bottom: 5px; 
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3); 
-        }
-
-        .signature-card .title { 
-            font-size: 0.7rem; 
-            opacity: 0.9; 
-            font-weight: 500; 
-        }
-
-        /* التكيف مع الشاشات الصغيرة */
-        @media (max-width: 768px) { 
-            .header-content {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            
-            .nav-tabs {
-                flex-direction: column;
-            }
-            
-            .nav-tab {
-                width: 100%;
-                text-align: right;
-            }
-            
-            .stats-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-actions {
-                flex-direction: column;
-            }
-            
-            .btn {
-                width: 100%;
-            }
-            
-            .signature-card { 
-                position: relative; 
-                bottom: auto; 
-                left: auto; 
-                margin: 20px auto 0; 
-                width: fit-content; 
-                animation: none; 
-            } 
-            
-            .signature-card:hover { 
-                transform: none; 
-            }
-        }
-
-        @media print {
-            .signature-card {
-                display: none;
-            }
-            
-            .nav-tabs, .form-actions, .filter-section {
-                display: none;
-            }
-        }
-
-        /* الرسوم المتحركة */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* أيقونات */
-        .icon {
-            font-size: 1.2rem;
-        }
-
-        /* شريط التقدم */
-        .progress-bar {
-            height: 10px;
-            background-color: #e9ecef;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-top: 5px;
-        }
-
-        .progress {
-            height: 100%;
-            background-color: var(--primary-color);
-            transition: width 0.3s;
-        }
-    </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#c62828">
+<title>نظام زيارات المطاعم - شركة نايف للأغذية</title>
+<link rel="icon" href="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--red:#c62828;--red2:#a71919;--blue:#eaf4ff;--white:#fff;--ink:#263747;--muted:#65798b;--line:#d8e5f0;--green:#18834b;--orange:#f4a321;--shadow:0 5px 20px #24415a12}
+*{box-sizing:border-box}
+body{margin:0;background:var(--blue);color:var(--ink);font-family:Tahoma,Arial,sans-serif;font-size:14px}
+button,input,select{font:inherit}
+button{cursor:pointer}
+header{background:var(--red);color:white;padding:12px 18px;position:sticky;top:0;z-index:20;box-shadow:0 3px 12px #0002}
+.head{max-width:1450px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{width:52px;height:52px;object-fit:contain;background:white;border-radius:10px;padding:3px}
+.brand h1{font-size:19px;margin:0 0 5px}
+.brand p{font-size:12px;margin:0;opacity:.9}
+.clock{direction:ltr;text-align:left;line-height:1.7;font-weight:bold}
+.wrap{max-width:1450px;margin:20px auto;padding:0 15px 100px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.nav button{background:white;color:#42576a;border:1px solid var(--line);border-radius:10px;padding:11px 17px;font-weight:bold}
+.nav button.active{background:var(--red);color:white;border-color:var(--red)}
+.panel,.stat{background:white;border:1px solid var(--line);border-radius:15px;padding:17px;margin-bottom:16px;box-shadow:var(--shadow)}
+.panel-title{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+.panel-title h2{font-size:17px;margin:0}
+.sub{font-size:12px;color:var(--muted);margin-top:5px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat{margin:0;animation:float 5s ease-in-out infinite}
+.stat:nth-child(2){animation-delay:.4s}.stat:nth-child(3){animation-delay:.8s}.stat:nth-child(4){animation-delay:1.2s}
+.stat span{font-size:12px;color:var(--muted)}
+.stat strong{display:block;font-size:27px;margin-top:8px;direction:ltr;text-align:right}
+@keyframes float{50%{transform:translateY(-5px)}}
+.toolbar{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:150px;position:relative}
+.field label{font-weight:bold;font-size:12px;color:#536a7c}
+input,select{width:100%;height:43px;padding:0 11px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);outline:none}
+input:focus,select:focus{border-color:#5797d0;box-shadow:0 0 0 3px #5797d01c}
+#visitorName{height:58px;font-size:28px;font-weight:bold}
+.btn{border:0;border-radius:10px;padding:11px 15px;min-height:42px;font-weight:bold}
+.primary{background:var(--red);color:white}.primary:hover{background:var(--red2)}
+.soft{background:#eaf3fc;color:#285b85;border:1px solid #d6e7f6}
+.neutral{background:#f1f4f6;color:#455b6c;border:1px solid var(--line)}
+.danger{background:#fff0f0;color:#b32121;border:1px solid #f2d0d0}
+.success{background:#e7f7ed;color:#187343;border:1px solid #ccebd8}
+.restaurant-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.restaurant-card{min-height:105px;border-radius:13px;padding:13px;text-align:right;border:1px solid #d5e5f2;background:#f1f7fd;display:flex;flex-direction:column;justify-content:space-between;gap:8px;color:var(--ink);transition:.15s}
+.restaurant-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px #1b46601b}
+.restaurant-card.open{background:#fff3dc;border:2px solid #e4a13b}
+.rname{font-size:15px;font-weight:bold;line-height:1.5}
+.meta{display:flex;justify-content:space-between;gap:5px;font-size:11px;color:#617789;flex-wrap:wrap}
+.open .meta span:first-child{color:#a2630c;font-weight:bold}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:11px}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{padding:11px;text-align:right;border-bottom:1px solid #eaf0f5;white-space:nowrap}
+th{background:#f1f6fa;color:#53697b;font-size:12px}
+td{font-size:13px}
+tbody tr:last-child td{border-bottom:0}
+.ltr{direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
+.status{display:inline-block;border-radius:20px;padding:5px 9px;font-size:11px;font-weight:bold}
+.status.open{background:#fff0d3;color:#966014}.status.done{background:#e5f6eb;color:#267449}
+.empty{text-align:center;color:#8a9aaa;padding:25px}
+.hidden{display:none!important}
+.report-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.mini{padding:12px;border-radius:11px;background:#f1f7fc;border:1px solid var(--line)}
+.mini span{font-size:12px;color:var(--muted)}
+.mini strong{display:block;font-size:23px;margin-top:6px}
+.suggest{position:absolute;top:100%;right:0;left:0;z-index:40;background:white;border:1px solid #d5e4ef;border-radius:10px;box-shadow:0 10px 24px #1b354522;max-height:220px;overflow:auto;margin-top:3px}
+.suggest button{width:100%;display:block;text-align:right;padding:10px;background:white;border:0;border-bottom:1px solid #edf2f6}
+.suggest button:hover{background:#eaf4ff}
+.toast{position:fixed;top:85px;left:15px;background:#263f52;color:white;padding:13px 18px;border-radius:10px;z-index:100;opacity:0;pointer-events:none;transition:.2s}
+.toast.show{opacity:1}
+.modal-bg{position:fixed;inset:0;background:#172c3d88;display:flex;align-items:center;justify-content:center;padding:15px;z-index:80}
+.modal{width:min(470px,100%);background:white;padding:20px;border-radius:15px;box-shadow:0 20px 60px #0003}
+.modal h3{margin:0 0 15px}
+.modal .field{margin-bottom:12px}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.signature-card{position:fixed;bottom:12px;left:12px;z-index:30;background:white;color:#245b9a;border:1.5px solid #c74747;border-radius:8px;padding:7px 11px;font-size:.62rem;font-weight:600;text-decoration:none;box-shadow:0 5px 17px #263c3020;animation:float 6s ease-in-out infinite;line-height:1.45}
+.signature-card .name{font-size:.72rem;font-weight:800}
+@media(max-width:950px){.restaurant-grid{grid-template-columns:repeat(3,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){
+ header{padding:9px 10px}.brand img{width:43px;height:43px}.brand h1{font-size:15px}.brand p{font-size:10px}.clock{font-size:11px}
+ .wrap{padding:0 9px 90px;margin:12px auto}.panel{padding:12px}
+ .nav{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.nav button{padding:10px 4px;font-size:12px}
+ .restaurant-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .restaurant-card{min-height:105px;padding:10px}.rname{font-size:14px}
+ .field{min-width:calc(50% - 8px)}.stats{gap:7px}.stat{padding:11px}.stat strong{font-size:23px}
+ .report-grid{grid-template-columns:repeat(2,1fr)}.summary{gap:6px}.mini{padding:9px}.mini strong{font-size:18px}
+ #visitorName{font-size:25px}
+}
+@media print{
+ header,.nav,.no-print,.signature-card,.toolbar,.restaurant-grid{display:none!important}
+ body{background:white}.wrap{margin:0;padding:0}.panel{box-shadow:none;border:0;padding:0}
+ table{min-width:0}th,td{font-size:9px;padding:6px}
+}
+</style>
 </head>
 <body>
-    <!-- شاشة تسجيل الدخول -->
-    <div id="login-page" class="page active">
-        <div class="login-container">
-            <img src="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" alt="شعار شركة نايف للأغذية" class="login-logo">
-            <h1 class="login-title">تسجيل الدخول</h1>
-            
-            <div class="search-users">
-                <input type="text" id="user-search" class="form-control" placeholder="ابحث عن مستخدم...">
-                <div id="users-list" class="users-list"></div>
-            </div>
-            
-            <div class="password-input">
-                <input type="password" id="password" class="form-control" placeholder="كلمة المرور">
-            </div>
-            
-            <button id="login-btn" class="btn btn-primary" style="width: 100%;">
-                <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
-            </button>
-            
-            <div id="login-error" class="login-error"></div>
-            
-            <div style="margin-top: 20px; font-size: 0.9rem; color: var(--gray-color);">
-                <p><strong>بيانات الدخول للاختبار:</strong></p>
-                <p>أدمن: Yasser - كلمة المرور: 123</p>
-                <p>مستخدم: Ahmed - كلمة المرور: 123</p>
-                <p>مستخدم: Shams - كلمة المرور: 123</p>
-            </div>
-        </div>
+<header>
+ <div class="head">
+  <div class="brand">
+   <img src="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" alt="شعار نايف">
+   <div><h1>شركة نايف للأغذية</h1><p>نظام تسجيل زيارات المطاعم</p></div>
+  </div>
+  <div class="clock"><div id="liveDate"></div><div id="liveClock"></div></div>
+ </div>
+</header>
+
+<div class="wrap">
+ <nav class="nav no-print">
+  <button class="active" data-page="dashboard">لوحة التحكم</button>
+  <button data-page="visits">سجل الزيارات</button>
+  <button data-page="reports">التقارير</button>
+  <button data-page="manage">إدارة المطاعم</button>
+  <button data-page="backup">النسخ الاحتياطي</button>
+ </nav>
+
+ <section id="dashboard" class="page">
+  <div class="stats">
+   <div class="stat"><span>إجمالي المطاعم</span><strong id="statRestaurants">0</strong></div>
+   <div class="stat"><span>زيارات اليوم</span><strong id="statToday">0</strong></div>
+   <div class="stat"><span>زيارات مفتوحة</span><strong id="statOpen">0</strong></div>
+   <div class="stat"><span>إجمالي الزيارات</span><strong id="statAll">0</strong></div>
+  </div>
+
+  <div class="panel">
+   <div class="panel-title">
+    <div><h2>تسجيل زيارة مطعم</h2><div class="sub">الضغطة الأولى لتسجيل الدخول والثانية لتسجيل الخروج</div></div>
+    <span class="status open">الزيارة المفتوحة باللون البرتقالي</span>
+   </div>
+   <div class="toolbar">
+    <div class="field">
+     <label>اسم منفّذ الزيارة</label>
+     <input id="visitorName" placeholder="اسم المشرف أو موظف التدقيق" autocomplete="off">
     </div>
-
-    <!-- التطبيق الرئيسي -->
-    <div id="main-app" class="page">
-        <!-- رأس الصفحة -->
-        <header>
-            <div class="container">
-                <div class="header-content">
-                    <div class="logo-section">
-                        <img src="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" alt="شعار شركة نايف للأغذية" class="logo">
-                        <div class="company-name">شركة نايف للأغذية</div>
-                    </div>
-                    
-                    <div class="user-info">
-                        <div class="user-name" id="current-user-name"></div>
-                        <button id="logout-btn" class="logout-btn">
-                            <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
-                        </button>
-                    </div>
-                    
-                    <div class="nav-tabs">
-                        <div class="nav-tab active" data-page="dashboard">
-                            <i class="fas fa-home icon"></i> لوحة التحكم
-                        </div>
-                        <div class="nav-tab" data-page="visits">
-                            <i class="fas fa-calendar-check icon"></i> تسجيل الزيارات
-                        </div>
-                        <div class="nav-tab" data-page="reports">
-                            <i class="fas fa-chart-bar icon"></i> التقارير
-                        </div>
-                        <div class="nav-tab admin-only" data-page="settings">
-                            <i class="fas fa-cog icon"></i> الإعدادات
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <div class="container">
-            <!-- لوحة التحكم -->
-            <div id="dashboard" class="page active">
-                <h1 class="section-title"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</h1>
-                
-                <!-- الكروت الإحصائية العائمة -->
-                <div class="stats-container">
-                    <div class="stat-card" style="--i:0">
-                        <div class="stat-icon" style="background-color: var(--primary-color);">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="total-hours">0</h3>
-                            <p>إجمالي ساعات الزيارات</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card" style="--i:1">
-                        <div class="stat-icon" style="background-color: var(--secondary-color);">
-                            <i class="fas fa-store"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="total-restaurants">0</h3>
-                            <p>عدد المطاعم</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card" style="--i:2">
-                        <div class="stat-icon" style="background-color: var(--success-color);">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="total-employees">0</h3>
-                            <p>عدد الموظفين</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card" style="--i:3">
-                        <div class="stat-icon" style="background-color: var(--warning-color);">
-                            <i class="fas fa-calendar-day"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="today-visits">0</h3>
-                            <p>زيارات اليوم</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- أحدث الزيارات -->
-                <div class="section">
-                    <h2 class="section-title"><i class="fas fa-history"></i> آخر الزيارات المسجلة</h2>
-                    <div class="table-container">
-                        <table id="recent-visits">
-                            <thead>
-                                <tr>
-                                    <th>الموظف</th>
-                                    <th>المطعم</th>
-                                    <th>التاريخ</th>
-                                    <th>وقت الدخول</th>
-                                    <th>وقت الخروج</th>
-                                    <th>المدة</th>
-                                    <th>الحالة</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- سيتم ملؤها بواسطة JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- تسجيل الزيارات -->
-            <div id="visits" class="page">
-                <div class="section">
-                    <h2 class="section-title"><i class="fas fa-calendar-plus"></i> تسجيل زيارة جديدة</h2>
-                    
-                    <div id="form-message" class="alert" style="display: none;"></div>
-                    
-                    <form id="visit-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="employee"><i class="fas fa-user"></i> اسم الموظف</label>
-                                <select id="employee" required>
-                                    <option value="">اختر الموظف</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="restaurant"><i class="fas fa-store"></i> اسم المطعم</label>
-                                <select id="restaurant" required>
-                                    <option value="">اختر المطعم</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="visit-date"><i class="fas fa-calendar-alt"></i> تاريخ الزيارة</label>
-                                <input type="date" id="visit-date" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="check-in"><i class="fas fa-sign-in-alt"></i> وقت الدخول</label>
-                                <input type="time" id="check-in" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="check-out"><i class="fas fa-sign-out-alt"></i> وقت الخروج</label>
-                                <input type="time" id="check-out" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="notes"><i class="fas fa-sticky-note"></i> الملاحظات</label>
-                            <textarea id="notes" placeholder="أدخل الملاحظات التي لاحظتها أثناء الزيارة..."></textarea>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> تسجيل الزيارة
-                            </button>
-                            <button type="button" id="start-visit" class="btn btn-success">
-                                <i class="fas fa-play"></i> بدء الزيارة الآن
-                            </button>
-                            <button type="button" id="end-visit" class="btn btn-warning" disabled>
-                                <i class="fas fa-stop"></i> إنهاء الزيارة
-                            </button>
-                            <button type="reset" class="btn btn-secondary">
-                                <i class="fas fa-redo"></i> إعادة تعيين
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                
-                <!-- قائمة الزيارات الحالية -->
-                <div class="section">
-                    <h2 class="section-title"><i class="fas fa-list"></i> الزيارات المسجلة</h2>
-                    <div class="table-container">
-                        <table id="visits-table">
-                            <thead>
-                                <tr>
-                                    <th>الرقم</th>
-                                    <th>الموظف</th>
-                                    <th>المطعم</th>
-                                    <th>التاريخ</th>
-                                    <th>وقت الدخول</th>
-                                    <th>وقت الخروج</th>
-                                    <th>المدة</th>
-                                    <th>الملاحظات</th>
-                                    <th>الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- سيتم ملؤها بواسطة JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- التقارير -->
-            <div id="reports" class="page">
-                <!-- فلترة التقارير -->
-                <div class="filter-section">
-                    <div class="filter-group">
-                        <label for="report-type">نوع التقرير</label>
-                        <select id="report-type">
-                            <option value="all-visits">جميع الزيارات</option>
-                            <option value="restaurant-hours">إجمالي الوقت بالمطعم</option>
-                            <option value="restaurants-visited">المطاعم خلال فترة</option>
-                            <option value="employee-comparison">مقارنة الموظفين</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label for="date-from">من تاريخ</label>
-                        <input type="date" id="date-from">
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label for="date-to">إلى تاريخ</label>
-                        <input type="date" id="date-to">
-                    </div>
-                    
-                    <div class="filter-group">
-                        <button id="generate-report" class="btn btn-primary">
-                            <i class="fas fa-chart-bar"></i> إنشاء التقرير
-                        </button>
-                        <button id="print-report" class="btn btn-secondary">
-                            <i class="fas fa-print"></i> طباعة التقرير
-                        </button>
-                        <button id="export-pdf" class="btn btn-danger">
-                            <i class="fas fa-file-pdf"></i> تصدير PDF
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- تقرير جميع الزيارات -->
-                <div class="section" id="all-visits-report">
-                    <h2 class="section-title"><i class="fas fa-list-alt"></i> تقرير جميع الزيارات</h2>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>الرقم</th>
-                                    <th>الموظف</th>
-                                    <th>المطعم</th>
-                                    <th>التاريخ</th>
-                                    <th>وقت الدخول</th>
-                                    <th>وقت الخروج</th>
-                                    <th>المدة</th>
-                                    <th>الملاحظات</th>
-                                </tr>
-                            </thead>
-                            <tbody id="all-visits-body">
-                                <!-- سيتم ملؤها بواسطة JavaScript -->
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="6" style="text-align: left; font-weight: bold;">إجمالي الساعات:</td>
-                                    <td id="total-hours-report" style="font-weight: bold;">0</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- تقرير إجمالي الوقت بالمطعم -->
-                <div class="section" id="restaurant-hours-report" style="display: none;">
-                    <h2 class="section-title"><i class="fas fa-clock"></i> تقرير إجمالي الوقت المنقضي في كل مطعم</h2>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>المطعم</th>
-                                    <th>عدد الزيارات</th>
-                                    <th>إجمالي الوقت (ساعة)</th>
-                                    <th>النسبة</th>
-                                </tr>
-                            </thead>
-                            <tbody id="restaurant-hours-body">
-                                <!-- سيتم ملؤها بواسطة JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- تقرير المطاعم خلال فترة -->
-                <div class="section" id="restaurants-visited-report" style="display: none;">
-                    <h2 class="section-title"><i class="fas fa-store"></i> تقرير المطاعم التي تمت زيارتها خلال فترة محددة</h2>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>المطعم</th>
-                                    <th>تاريخ أول زيارة</th>
-                                    <th>تاريخ آخر زيارة</th>
-                                    <th>عدد الزيارات</th>
-                                    <th>عدد الموظفين المختلفين</th>
-                                </tr>
-                            </thead>
-                            <tbody id="restaurants-visited-body">
-                                <!-- سيتم ملؤها بواسطة JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- تقرير مقارنة الموظفين -->
-                <div class="section" id="employee-comparison-report" style="display: none;">
-                    <h2 class="section-title"><i class="fas fa-users"></i> تقرير مقارنة الموظفين</h2>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>الموظف</th>
-                                    <th>عدد الزيارات</th>
-                                    <th>إجمالي الساعات</th>
-                                    <th>متوسط مدة الزيارة</th>
-                                    <th>عدد المطاعم المختلفة</th>
-                                    <th>المطاعم التي تمت زيارتها</th>
-                                </tr>
-                            </thead>
-                            <tbody id="employee-comparison-body">
-                                <!-- سيتم ملؤها بواسطة JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- الإعدادات -->
-            <div id="settings" class="page">
-                <!-- إدارة المطاعم -->
-                <div class="section">
-                    <h2 class="section-title"><i class="fas fa-store"></i> إدارة المطاعم</h2>
-                    
-                    <div id="restaurant-message" class="alert" style="display: none;"></div>
-                    
-                    <form id="restaurant-form">
-                        <input type="hidden" id="restaurant-id">
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="restaurant-name"><i class="fas fa-signature"></i> اسم المطعم</label>
-                                <input type="text" id="restaurant-name" placeholder="أدخل اسم المطعم" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="restaurant-location"><i class="fas fa-map-marker-alt"></i> الموقع</label>
-                                <input type="text" id="restaurant-location" placeholder="أدخل موقع المطعم">
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="area-manager"><i class="fas fa-user-tie"></i> مدير المنطقة</label>
-                                <input type="text" id="area-manager" placeholder="مدير المنطقة">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="operations-manager"><i class="fas fa-user-cog"></i> مدير التشغيل</label>
-                                <input type="text" id="operations-manager" placeholder="مدير التشغيل">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="restaurant-notes"><i class="fas fa-sticky-note"></i> ملاحظات إضافية</label>
-                            <textarea id="restaurant-notes" placeholder="ملاحظات إضافية عن المطعم..."></textarea>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-plus"></i> إضافة مطعم
-                            </button>
-                            <button type="button" id="update-restaurant" class="btn btn-primary" style="display: none;">
-                                <i class="fas fa-edit"></i> تحديث المطعم
-                            </button>
-                            <button type="button" id="cancel-restaurant" class="btn btn-secondary" style="display: none;">
-                                <i class="fas fa-times"></i> إلغاء
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <div class="table-container" style="margin-top: 30px;">
-                        <table id="restaurants-table">
-                            <thead>
-                                <tr>
-                                    <th>الرقم</th>
-                                    <th>اسم المطعم</th>
-                                    <th>الموقع</th>
-                                    <th>مدير المنطقة</th>
-                                    <th>مدير التشغيل</th>
-                                    <th>ملاحظات</th>
-                                    <th>عدد الزيارات</th>
-                                    <th>الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- سيتم ملؤها بواسطة JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- إدارة الموظفين -->
-                <div class="section">
-                    <h2 class="section-title"><i class="fas fa-users"></i> إدارة الموظفين</h2>
-                    
-                    <div id="employee-message" class="alert" style="display: none;"></div>
-                    
-                    <form id="employee-form">
-                        <input type="hidden" id="employee-id">
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="employee-name"><i class="fas fa-user"></i> اسم الموظف</label>
-                                <input type="text" id="employee-name" placeholder="أدخل اسم الموظف" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="employee-department"><i class="fas fa-building"></i> القسم</label>
-                                <input type="text" id="employee-department" placeholder="أدخل قسم الموظف">
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="employee-phone"><i class="fas fa-phone"></i> رقم الهاتف</label>
-                                <input type="tel" id="employee-phone" placeholder="أدخل رقم الهاتف">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="employee-email"><i class="fas fa-envelope"></i> البريد الإلكتروني</label>
-                                <input type="email" id="employee-email" placeholder="أدخل البريد الإلكتروني">
-                            </div>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-plus"></i> إضافة موظف
-                            </button>
-                            <button type="button" id="update-employee" class="btn btn-primary" style="display: none;">
-                                <i class="fas fa-edit"></i> تحديث الموظف
-                            </button>
-                            <button type="button" id="cancel-employee" class="btn btn-secondary" style="display: none;">
-                                <i class="fas fa-times"></i> إلغاء
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <div class="table-container" style="margin-top: 30px;">
-                        <table id="employees-table">
-                            <thead>
-                                <tr>
-                                    <th>الرقم</th>
-                                    <th>اسم الموظف</th>
-                                    <th>القسم</th>
-                                    <th>رقم الهاتف</th>
-                                    <th>البريد الإلكتروني</th>
-                                    <th>عدد الزيارات</th>
-                                    <th>الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- سيتم ملؤها بواسطة JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="field">
+     <label>بحث عن مطعم</label>
+     <input id="restaurantSearch" class="smart" data-source="restaurants" placeholder="اكتب أول حرف أو أكثر" autocomplete="off">
     </div>
+   </div>
+   <div id="restaurantGrid" class="restaurant-grid"></div>
+  </div>
 
-    <!-- PDF Template -->
-    <div id="pdf-template" class="pdf-template">
-        <div class="pdf-header" style="padding: 5px; margin-bottom: 10px; padding-left: 30px;">
-            <div class="pdf-header-row" style="text-align: center;">
-                <div style="text-align: center; margin-bottom: 10px;">
-                    <img src="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" alt="شعار الشركة" 
-                         style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #4a90e2; margin-bottom: 5px; margin: 0 auto 5px; display: block;">
-                    <h2 style="color: #4a90e2; margin: 0; font-size: 18px;">
-                        شركة نايف للأغذية
-                    </h2>
-                </div>
-                <h3 style="color: #4a90e2; margin: 0 0 8px 0; font-size: 16px;" id="pdf-report-title">تقرير زيارات المطاعم</h3>
-                <div style="margin-bottom: 8px; text-align: center;">
-                    <div style="font-size: 14px; font-weight: bold; display: inline-block;">
-                        نوع التقرير: <span id="pdf-report-type"></span>
-                    </div>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px;">
-                    <div>الفترة: من <span id="pdf-start-date"></span> إلى <span id="pdf-end-date"></span></div>
-                    <div>تاريخ الطباعة: <span id="pdf-print-date"></span></div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="pdf-summary" style="margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 11px; padding-left: 30px;">
-        </div>
-        
-        <table class="statement-table" id="pdf-statement-table" style="font-size: 10px; border-collapse: collapse; width: calc(100% - 40px); margin-left: 30px;">
-            <tbody id="pdf-table-body" style="font-size: 9px;">
-            </tbody>
-        </table>
-    </div>
+  <div class="panel">
+   <div class="panel-title"><h2>آخر الزيارات</h2><button class="btn soft" data-goto="visits">عرض السجل بالكامل</button></div>
+   <div class="table-wrap"><table>
+    <thead><tr><th>المطعم</th><th>منفّذ الزيارة</th><th>تاريخ الدخول</th><th>وقت الدخول</th><th>وقت الخروج</th><th>الحالة</th></tr></thead>
+    <tbody id="recentRows"></tbody>
+   </table></div>
+  </div>
+ </section>
 
-    <!-- توقيع المطور -->
-    <div class="signature-card">
-        <div class="name">Yasser Elkhateeb</div>
-        <div class="title">مطور البرنامج 67011143</div>
-    </div>
+ <section id="visits" class="page hidden">
+  <div class="panel">
+   <div class="panel-title"><h2>سجل الزيارات</h2><button class="btn success" id="excelVisits">تصدير Excel</button></div>
+   <div class="toolbar">
+    <div class="field"><label>بحث</label><input id="visitSearch" class="smart" data-source="visitSearch" placeholder="مطعم أو اسم منفّذ الزيارة"></div>
+    <div class="field"><label>من تاريخ</label><input type="date" id="visitFrom"></div>
+    <div class="field"><label>إلى تاريخ</label><input type="date" id="visitTo"></div>
+    <button class="btn primary" id="searchVisits">بحث</button>
+    <button class="btn neutral" id="clearVisits">مسح</button>
+    <button class="btn soft" id="printVisits">PDF / طباعة</button>
+   </div>
+   <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>المطعم</th><th>مدير المنطقة</th><th>مدير التشغيل</th><th>منفّذ الزيارة</th><th>تاريخ الدخول</th><th>وقت الدخول</th><th>تاريخ الخروج</th><th>وقت الخروج</th><th>المدة</th><th>الحالة</th></tr></thead>
+    <tbody id="visitRows"></tbody>
+   </table></div>
+   <div class="sub" id="visitCount"></div>
+  </div>
+ </section>
 
-    <script>
-        // بيانات التطبيق
-        let appData = {
-            employees: [
-                { id: 1, name: "أحمد محمد", department: "التفتيش", phone: "555-1234", email: "ahmed@example.com", visits: 5 },
-                { id: 2, name: "سارة خالد", department: "الجودة", phone: "555-5678", email: "sara@example.com", visits: 8 },
-                { id: 3, name: "محمد علي", department: "الإدارة", phone: "555-9012", email: "mohamed@example.com", visits: 3 },
-                { id: 4, name: "يوسف أحمد", department: "المبيعات", phone: "555-3456", email: "youssef@example.com", visits: 0 }
-            ],
-            restaurants: [
-                // سيتم تعبئة هذه القائمة من الملف المرفق
-            ],
-            visits: [
-                { 
-                    id: 1, 
-                    employeeId: 1, 
-                    restaurantId: 1, 
-                    date: "2023-10-01", 
-                    checkIn: "09:00", 
-                    checkOut: "11:30", 
-                    duration: 2.5, 
-                    notes: "كل شيء على ما يرام" 
-                },
-                { 
-                    id: 2, 
-                    employeeId: 2, 
-                    restaurantId: 2, 
-                    date: "2023-10-02", 
-                    checkIn: "10:00", 
-                    checkOut: "12:45", 
-                    duration: 2.75, 
-                    notes: "تحسينات مقترحة في العرض" 
-                },
-                { 
-                    id: 3, 
-                    employeeId: 1, 
-                    restaurantId: 3, 
-                    date: "2023-10-03", 
-                    checkIn: "08:30", 
-                    checkOut: "10:45", 
-                    duration: 2.25, 
-                    notes: "مشكلة في التبريد" 
-                }
-            ],
-            nextVisitId: 4,
-            nextEmployeeId: 5,
-            nextRestaurantId: 1,
-            activeVisit: null,
-            currentUser: null,
-            users: [
-                { username: "yasser", name: "Yasser", role: "admin", password: "123" },
-                { username: "ahmed", name: "Ahmed", role: "user", password: "123" },
-                { username: "shams", name: "Shams", role: "user", password: "123" }
-            ]
-        };
+ <section id="reports" class="page hidden">
+  <div class="panel">
+   <div class="panel-title"><div><h2>تقارير الزيارات</h2><div class="sub">تصفية حسب مدير المنطقة أو مدير التشغيل أو المطعم أو منفّذ الزيارة</div></div></div>
+   <div class="report-grid">
+    <div class="field"><label>من تاريخ</label><input type="date" id="repFrom"></div>
+    <div class="field"><label>إلى تاريخ</label><input type="date" id="repTo"></div>
+    <div class="field"><label>مدير المنطقة</label><input id="repArea" class="smart" data-source="areas" placeholder="جميع مديري المناطق"></div>
+    <div class="field"><label>مدير التشغيل</label><input id="repOps" class="smart" data-source="ops" placeholder="جميع مديري التشغيل"></div>
+    <div class="field"><label>المطعم</label><input id="repRestaurant" class="smart" data-source="restaurants" placeholder="جميع المطاعم"></div>
+    <div class="field"><label>منفّذ الزيارة</label><input id="repVisitor" class="smart" data-source="visitors" placeholder="جميع الأشخاص"></div>
+   </div>
+   <div class="toolbar" style="margin-top:13px">
+    <button class="btn primary" id="buildReport">عرض التقرير</button>
+    <button class="btn neutral" id="resetReport">إعادة ضبط</button>
+    <button class="btn soft" id="printReport">تصدير PDF</button>
+    <button class="btn success" id="excelReport">تصدير Excel</button>
+   </div>
+   <div class="summary">
+    <div class="mini"><span>عدد الزيارات</span><strong id="repTotal">0</strong></div>
+    <div class="mini"><span>زيارات مكتملة</span><strong id="repDone">0</strong></div>
+    <div class="mini"><span>زيارات مفتوحة</span><strong id="repOpen">0</strong></div>
+   </div>
+   <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>المطعم</th><th>مدير المنطقة</th><th>مدير التشغيل</th><th>منفّذ الزيارة</th><th>تاريخ الدخول</th><th>وقت الدخول</th><th>تاريخ الخروج</th><th>وقت الخروج</th><th>المدة</th><th>الحالة</th></tr></thead>
+    <tbody id="reportRows"></tbody>
+   </table></div>
+  </div>
+ </section>
 
-        // قائمة المطاعم من الملف المرفق
-        const restaurantData = [
-            { name: "الفيحاء", areaManager: "حجازي", operationsManager: "طارق بيومي" },
-            { name: "شارع البحرين", areaManager: "مختار", operationsManager: "هاني عبدالله" },
-            { name: "جمعية العدان والقصور", areaManager: "انور", operationsManager: "طارق بيومي" },
-            { name: "الجابرية تكا و فرايد", areaManager: "مختار", operationsManager: "هاني عبدالله" },
-            { name: "الفحاحيل", areaManager: "وليد", operationsManager: "هاني عبدالله" },
-            { name: "أبو حليفة", areaManager: "ثروت", operationsManager: "هاني عبدالله" },
-            { name: "الرقعي", areaManager: "عماد", operationsManager: "طارق بيومي" },
-            { name: "مشرف", areaManager: "مختار", operationsManager: "هاني عبدالله" },
-            { name: "النافورة", areaManager: "مختار", operationsManager: "هاني عبدالله" },
-            { name: "القادسية", areaManager: "حجازي", operationsManager: "طارق بيومي" },
-            { name: "صباح السالم", areaManager: "ثروت", operationsManager: "هاني عبدالله" },
-            { name: "الضباعية", areaManager: "وليد", operationsManager: "هاني عبدالله" },
-            { name: "الشرق", areaManager: "وليد", operationsManager: "هاني عبدالله" },
-            { name: "الجابرية بنت الديك", areaManager: "مختار", operationsManager: "هاني عبدالله" },
-            { name: "الجهراء الزويخ", areaManager: "طارق", operationsManager: "طارق بيومي" },
-            { name: "الشويخ واره", areaManager: "حجازي", operationsManager: "طارق بيومي" },
-            { name: "السيد ياسين", areaManager: "مختار", operationsManager: "هاني عبدالله" },
-            { name: "الفنطاس", areaManager: "وليد", operationsManager: "هاني عبدالله" },
-            { name: "السندباد", areaManager: "مختار", operationsManager: "هاني عبدالله" },
-            { name: "المطار", areaManager: "حجازي", operationsManager: "طارق بيومي" },
-            { name: "المنقف", areaManager: "وليد", operationsManager: "هاني عبدالله" },
-            { name: "حولي بارك", areaManager: "حجازي", operationsManager: "طارق بيومي" },
-            { name: "الرقة", areaManager: "ثروت", operationsManager: "هاني عبدالله" },
-            { name: "الرحاب", areaManager: "عماد", operationsManager: "طارق بيومي" },
-            { name: "هدية", areaManager: "ثروت", operationsManager: "هاني عبدالله" },
-            { name: "نادي الصليبخات", areaManager: "عماد", operationsManager: "طارق بيومي" },
-            { name: "الجهراء الصناعية", areaManager: "حجازي", operationsManager: "طارق بيومي" },
-            { name: "الفروانية", areaManager: "عماد", operationsManager: "طارق بيومي" },
-            { name: "أسواق القرين", areaManager: "انور", operationsManager: "طارق بيومي" },
-            { name: "سلوى", areaManager: "ثروت", operationsManager: "هاني عبدالله" },
-            { name: "سوق الجليب", areaManager: "طارق", operationsManager: "طارق بيومي" },
-            { name: "الشهداء", areaManager: "انور", operationsManager: "طارق بيومي" },
-            { name: "الدسمة وبنيد القار", areaManager: "وليد", operationsManager: "هاني عبدالله" },
-            { name: "جمعية صباح الاحمد", areaManager: "ثروت", operationsManager: "هاني عبدالله" },
-            { name: "الافينيوز", areaManager: "طارق", operationsManager: "طارق بيومي" },
-            { name: "الصليبية الصناعية", areaManager: "طارق", operationsManager: "طارق بيومي" },
-            { name: "جمعية أبوفطيرة", areaManager: "وليد", operationsManager: "هاني عبدالله" },
-            { name: "غرب أبو فطيرة", areaManager: "انور", operationsManager: "طارق بيومي" },
-            { name: "خيطان العصيمي", areaManager: "انور", operationsManager: "طارق بيومي" },
-            { name: "الوفرة", areaManager: "ثروت", operationsManager: "هاني عبدالله" },
-            { name: "جمعية القيروان", areaManager: "طارق", operationsManager: "طارق بيومي" },
-            { name: "شرق الاحمدي", areaManager: "ثروت", operationsManager: "هاني عبدالله" },
-            { name: "الفروانية فرع 2", areaManager: "عماد", operationsManager: "طارق بيومي" },
-            { name: "جمعية الصليبية", areaManager: "طارق", operationsManager: "طارق بيومي" },
-            { name: "جمعية الزهراء", areaManager: "انور", operationsManager: "طارق بيومي" },
-            { name: "جمعية مدينة جابر الأحمد", areaManager: "عماد", operationsManager: "طارق بيومي" },
-            { name: "الخيران أوتليت مول", areaManager: "وليد", operationsManager: "هاني عبدالله" },
-            { name: "الخيران أويا مول", areaManager: "وليد", operationsManager: "هاني عبدالله" },
-            { name: "الجهراء ليالي الشرق", areaManager: "حجازي", operationsManager: "طارق بيومي" },
-            { name: "الجهراء مجمع مكة", areaManager: "طارق", operationsManager: "طارق بيومي" },
-            { name: "العارضية الجديد", areaManager: "عماد", operationsManager: "طارق بيومي" },
-            { name: "الري", areaManager: "مختار", operationsManager: "هاني عبدالله" },
-            { name: "مارينا مول", areaManager: "مختار", operationsManager: "هاني عبدالله" },
-            { name: "صباح السالم (العرين)", areaManager: "ثروت", operationsManager: "هاني عبدالله" },
-            { name: "مول 360", areaManager: "انور", operationsManager: "طارق بيومي" },
-            { name: "الخيول", areaManager: "ثروت", operationsManager: "هاني عبدالله" },
-            { name: "مجمع الكوت", areaManager: "وليد", operationsManager: "هاني عبدالله" },
-            { name: "كبد", areaManager: "طارق", operationsManager: "طارق بيومي" },
-            { name: "سعد العبدالله", areaManager: "مختار", operationsManager: "هاني عبدالله" }
-        ];
+ <section id="manage" class="page hidden">
+  <div class="panel">
+   <div class="panel-title"><h2>إدارة المطاعم</h2><button class="btn primary" id="addRestaurant">＋ إضافة مطعم</button></div>
+   <div class="toolbar"><div class="field"><label>بحث عن مطعم</label><input id="manageSearch" class="smart" data-source="restaurants" placeholder="اسم المطعم"></div></div>
+   <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>المطعم</th><th>مدير المنطقة</th><th>مدير التشغيل</th><th>الإجراءات</th></tr></thead>
+    <tbody id="manageRows"></tbody>
+   </table></div>
+  </div>
+ </section>
 
-        // تهيئة التطبيق عند تحميل الصفحة
-        document.addEventListener('DOMContentLoaded', function() {
-            initApp();
-        });
+ <section id="backup" class="page hidden">
+  <div class="panel">
+   <h2>النسخ الاحتياطي</h2>
+   <p>يتم حفظ البيانات تلقائيًا في المتصفح على هذا الجهاز. احتفظ بنسخة احتياطية دورية.</p>
+   <div class="toolbar">
+    <button class="btn primary" id="backupButton">تنزيل نسخة احتياطية</button>
+    <label class="btn soft" for="restoreFile">استيراد نسخة احتياطية</label>
+    <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
+   </div>
+   <p class="sub">البيانات المحلية لا تتم مزامنتها تلقائيًا بين الأجهزة. يلزم ربط Firebase إذا أردت استخدام النظام من عدة أجهزة ومستخدمين.</p>
+   <hr>
+   <div class="toolbar">
+    <button class="btn soft" id="soundButton">تفعيل التنبيه الصوتي</button>
+    <span class="sub" id="soundStatus">التنبيه الصوتي غير مفعل</span>
+   </div>
+   <p class="sub">يصدر تنبيه عند استمرار الزيارة مفتوحة لمدة ساعة. يجب إبقاء صفحة البرنامج مفتوحة، وقد يؤخر المتصفح التنبيه إذا كانت الصفحة في الخلفية.</p>
+  </div>
+ </section>
+</div>
 
-        // تهيئة التطبيق
-        function initApp() {
-            // تحميل البيانات من localStorage إن وجدت
-            loadData();
-            
-            // تعبئة بيانات المطاعم
-            initializeRestaurants();
-            
-            // إعداد تسجيل الدخول
-            setupLogin();
-            
-            // إعداد التنقل بين الصفحات
-            setupNavigation();
-            
-            // تعبئة القوائم المنسدلة
-            populateDropdowns();
-            
-            // تحديث الإحصائيات
-            updateStats();
-            
-            // تحديث الجداول
-            updateVisitsTable();
-            updateRecentVisitsTable();
-            updateRestaurantsTable();
-            updateEmployeesTable();
-            
-            // إعداد نموذج تسجيل الزيارة
-            setupVisitForm();
-            
-            // إعداد نموذج المطاعم
-            setupRestaurantForm();
-            
-            // إعداد نموذج الموظفين
-            setupEmployeeForm();
-            
-            // إعداد التقارير
-            setupReports();
-            
-            // تعيين تاريخ اليوم في حقول التاريخ
-            setTodayDate();
-        }
+<div id="toast" class="toast"></div>
 
-        // تعبئة بيانات المطاعم
-        function initializeRestaurants() {
-            if (appData.restaurants.length === 0) {
-                restaurantData.forEach((restaurant, index) => {
-                    appData.restaurants.push({
-                        id: index + 1,
-                        name: restaurant.name,
-                        location: "",
-                        areaManager: restaurant.areaManager,
-                        operationsManager: restaurant.operationsManager,
-                        notes: "",
-                        visits: 0
-                    });
-                });
-                appData.nextRestaurantId = restaurantData.length + 1;
-                saveData();
-            }
-        }
+<div id="modalBg" class="modal-bg hidden">
+ <div class="modal">
+  <h3 id="modalTitle">إضافة مطعم</h3>
+  <div class="field"><label>اسم المطعم</label><input id="editName"></div>
+  <div class="field"><label>مدير المنطقة</label><input id="editArea" class="smart" data-source="areas"></div>
+  <div class="field"><label>مدير التشغيل</label><input id="editOps" class="smart" data-source="ops"></div>
+  <div class="modal-actions">
+   <button class="btn primary" id="saveRestaurant">حفظ</button>
+   <button class="btn danger hidden" id="deleteRestaurant">حذف المطعم</button>
+   <button class="btn neutral" id="cancelModal">إلغاء</button>
+  </div>
+ </div>
+</div>
 
-        // تحميل البيانات من localStorage
-        function loadData() {
-            const savedData = localStorage.getItem('restaurantVisitsSystem');
-            if (savedData) {
-                const parsedData = JSON.parse(savedData);
-                appData = { ...appData, ...parsedData };
-            }
-        }
+<a class="signature-card" href="https://yasser-q8.github.io/myprofile/#" target="_blank" rel="noopener noreferrer">
+ <div class="name">Yasser Elkhateeb</div><div>مطور البرنامج 67011143</div>
+</a>
 
-        // حفظ البيانات في localStorage
-        function saveData() {
-            localStorage.setItem('restaurantVisitsSystem', JSON.stringify(appData));
-        }
+<script>
+const initialRestaurants=[
+{"name":"مول 360","area":"وليد صبري","ops":"طارق بيومي"},
+{"name":"جمعية أبو فطيرة","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
+{"name":"أبوحليفة","area":"محمد حجازي","ops":"هاني عبدالله"},
+{"name":"شرق الاحمدي","area":"محمد حجازي","ops":"هاني عبدالله"},
+{"name":"المطار","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"الري","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"الري -2","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"مجمع الكوت","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
+{"name":"مجمع الافنيوز","area":"محمد مرتضى","ops":"طارق بيومي"},
+{"name":"الضباعية","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
+{"name":"الدسمة وبنيد القار","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"الفحاحيل","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
+{"name":"الفحيحيل -2","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
+{"name":"الفيحاء","area":"وليد صبري","ops":"طارق بيومي"},
+{"name":"الفروانية","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"الفنطاس","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"هدية","area":"محمد حجازي","ops":"هاني عبدالله"},
+{"name":"هدية -2","area":"محمد حجازي","ops":"هاني عبدالله"},
+{"name":"حولي الترفيهي","area":"وليد صبري","ops":"طارق بيومي"},
+{"name":"جمعية مدينة جابر الأحمد","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"الجابرية تكا و فرايد","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"الجابرية بنت الديك","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"الجهراء الصناعية","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"الجهراء - ليالي الشرق","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"الجهراء - مجمع مكة","area":"وليد صبري","ops":"طارق بيومي"},
+{"name":"الجهراء الزويخ","area":"وليد صبري","ops":"طارق بيومي"},
+{"name":"سوق الجليب","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"كبد","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"الخيران أويا","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
+{"name":"الخيران أوتليت","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
+{"name":"خيطان العصيمي","area":"محمد مرتضى","ops":"طارق بيومي"},
+{"name":"الخيول","area":"محمد حجازي","ops":"هاني عبدالله"},
+{"name":"المنقف","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
+{"name":"مارينا مول - عالم المارينا","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"مشرف","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"العارضية الحرفية","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"الفروانية فرع 2","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"القادسية","area":"وليد صبري","ops":"طارق بيومي"},
+{"name":"جمعية القيروان","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"جمعية العدان والقصور","area":"محمد مرتضى","ops":"طارق بيومي"},
+{"name":"الرقعي","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"الرحاب","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"الرقة","area":"محمد حجازي","ops":"هاني عبدالله"},
+{"name":"مدينة سعد العبد الله","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"مدينة صباح الاحمد","area":"محمد حجازي","ops":"هاني عبدالله"},
+{"name":"صباح السالم","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"صباح السالم - العرين","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"صباح السالم العرين -2","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"النافورة","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"السندباد","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"شارع البحرين","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"سيد ياسين","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"سيد ياسين -2","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"سلوى","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"الشرق","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"الشرق -2","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"جمعية الشهداء","area":"وليد صبري","ops":"طارق بيومي"},
+{"name":"الشويخ واره","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"اسواق القرين","area":"محمد مرتضى","ops":"طارق بيومي"},
+{"name":"أسواق القرين -2","area":"محمد مرتضى","ops":"طارق بيومي"},
+{"name":"جمعية الصليبية","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"جمعية الصليبية -2","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"نادي الصليبخات","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"الصليبخات -2","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"الصليبية","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"جمعية الوفرة","area":"محمد حجازي","ops":"هاني عبدالله"},
+{"name":"غرب أبو فطيرة الحرفية","area":"محمد مرتضى","ops":"طارق بيومي"},
+{"name":"جمعية الزهراء التعاونية","area":"وليد صبري","ops":"طارق بيومي"},
+{"name":"خيطان شارع المطار","area":"محمد مرتضى","ops":"طارق بيومي"},
+{"name":"نادي النصر","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"افنتورا","area":"وليد صبري","ops":"طارق بيومي"}
+];
 
-        // إعداد تسجيل الدخول
-        function setupLogin() {
-            const userSearch = document.getElementById('user-search');
-            const usersList = document.getElementById('users-list');
-            const loginBtn = document.getElementById('login-btn');
-            const passwordInput = document.getElementById('password');
-            const loginError = document.getElementById('login-error');
-            
-            // عرض قائمة المستخدمين عند الكتابة
-            userSearch.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                usersList.innerHTML = '';
-                
-                if (searchTerm.length > 0) {
-                    const filteredUsers = appData.users.filter(user => 
-                        user.name.toLowerCase().includes(searchTerm) || 
-                        user.username.toLowerCase().includes(searchTerm)
-                    );
-                    
-                    if (filteredUsers.length > 0) {
-                        filteredUsers.forEach(user => {
-                            const userItem = document.createElement('div');
-                            userItem.className = 'user-item';
-                            userItem.textContent = user.name;
-                            userItem.dataset.username = user.username;
-                            userItem.dataset.name = user.name;
-                            
-                            userItem.addEventListener('click', function() {
-                                userSearch.value = this.dataset.name;
-                                usersList.style.display = 'none';
-                            });
-                            
-                            usersList.appendChild(userItem);
-                        });
-                        usersList.style.display = 'block';
-                    } else {
-                        usersList.style.display = 'none';
-                    }
-                } else {
-                    usersList.style.display = 'none';
-                }
-            });
-            
-            // تسجيل الدخول
-            loginBtn.addEventListener('click', function() {
-                const userName = userSearch.value.trim();
-                const password = passwordInput.value;
-                
-                if (!userName || !password) {
-                    loginError.textContent = 'يرجى إدخال اسم المستخدم وكلمة المرور';
-                    loginError.style.display = 'block';
-                    return;
-                }
-                
-                // البحث عن المستخدم (ديناميكي، غير حساس لحالة الأحرف)
-                const user = appData.users.find(u => 
-                    u.name.toLowerCase() === userName.toLowerCase() || 
-                    u.username.toLowerCase() === userName.toLowerCase()
-                );
-                
-                if (!user) {
-                    loginError.textContent = 'اسم المستخدم غير صحيح';
-                    loginError.style.display = 'block';
-                    return;
-                }
-                
-                if (user.password !== password) {
-                    loginError.textContent = 'كلمة المرور غير صحيحة';
-                    loginError.style.display = 'block';
-                    return;
-                }
-                
-                // تسجيل الدخول الناجح
-                appData.currentUser = user;
-                
-                // إخفاء صفحة تسجيل الدخول وعرض التطبيق الرئيسي
-                document.getElementById('login-page').classList.remove('active');
-                document.getElementById('main-app').classList.add('active');
-                
-                // تحديث اسم المستخدم في الشاشة
-                document.getElementById('current-user-name').textContent = user.name;
-                
-                // إخفاء تبويب الإعدادات إذا كان المستخدم ليس أدمن
-                if (user.role !== 'admin') {
-                    document.querySelectorAll('.admin-only').forEach(el => {
-                        el.style.display = 'none';
-                    });
-                }
-                
-                // إظهار تبويب التقارير فقط للأدمن
-                if (user.role !== 'admin') {
-                    document.querySelector('.nav-tab[data-page="reports"]').style.display = 'none';
-                    document.querySelector('.nav-tab[data-page="settings"]').style.display = 'none';
-                }
-            });
-            
-            // السماح بتسجيل الدخول بالضغط على Enter
-            passwordInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    loginBtn.click();
-                }
-            });
-            
-            // إعداد زر تسجيل الخروج
-            document.getElementById('logout-btn').addEventListener('click', function() {
-                appData.currentUser = null;
-                document.getElementById('main-app').classList.remove('active');
-                document.getElementById('login-page').classList.add('active');
-                
-                // إعادة تعيين حقول تسجيل الدخول
-                userSearch.value = '';
-                passwordInput.value = '';
-                loginError.style.display = 'none';
-                usersList.style.display = 'none';
-            });
-        }
+const KEY="naifRestaurantVisits_v2";
+let db=loadDB(),reportResults=[],editingOldName=null,soundEnabled=false,audioContext=null;
 
-        // إعداد التنقل بين الصفحات
-        function setupNavigation() {
-            const navTabs = document.querySelectorAll('.nav-tab');
-            const pages = document.querySelectorAll('.page');
-            
-            navTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // التحقق من صلاحيات المستخدم
-                    if (this.classList.contains('admin-only') && appData.currentUser.role !== 'admin') {
-                        showMessage('form-message', 'غير مسموح لك بالوصول إلى هذه الصفحة', 'warning');
-                        return;
-                    }
-                    
-                    // إزالة النشاط من جميع التبويبات والصفحات
-                    navTabs.forEach(t => t.classList.remove('active'));
-                    pages.forEach(p => p.classList.remove('active'));
-                    
-                    // إضافة النشاط للتبويب والصفحة المحددة
-                    this.classList.add('active');
-                    const pageId = this.getAttribute('data-page');
-                    document.getElementById(pageId).classList.add('active');
-                    
-                    // تحديث البيانات عند التبديل إلى صفحة التقارير
-                    if (pageId === 'reports') {
-                        generateReport('all-visits');
-                    }
-                    
-                    // تحديث الإحصائيات عند التبديل إلى لوحة التحكم
-                    if (pageId === 'dashboard') {
-                        updateStats();
-                        updateRecentVisitsTable();
-                    }
-                });
-            });
-        }
-
-        // تعبئة القوائم المنسدلة
-        function populateDropdowns() {
-            const employeeSelect = document.getElementById('employee');
-            const restaurantSelect = document.getElementById('restaurant');
-            
-            // تفريغ القوائم
-            employeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
-            restaurantSelect.innerHTML = '<option value="">اختر المطعم</option>';
-            
-            // تعبئة قائمة الموظفين
-            appData.employees.forEach(employee => {
-                const option = document.createElement('option');
-                option.value = employee.id;
-                option.textContent = employee.name;
-                employeeSelect.appendChild(option);
-            });
-            
-            // تعبئة قائمة المطاعم
-            appData.restaurants.forEach(restaurant => {
-                const option = document.createElement('option');
-                option.value = restaurant.id;
-                option.textContent = restaurant.name;
-                restaurantSelect.appendChild(option);
-            });
-        }
-
-        // تحديث الإحصائيات
-        function updateStats() {
-            // إجمالي ساعات الزيارات
-            const totalHours = appData.visits.reduce((sum, visit) => sum + visit.duration, 0);
-            document.getElementById('total-hours').textContent = totalHours.toFixed(1);
-            
-            // عدد المطاعم
-            document.getElementById('total-restaurants').textContent = appData.restaurants.length;
-            
-            // عدد الموظفين
-            document.getElementById('total-employees').textContent = appData.employees.length;
-            
-            // زيارات اليوم
-            const today = new Date().toISOString().split('T')[0];
-            const todayVisits = appData.visits.filter(visit => visit.date === today).length;
-            document.getElementById('today-visits').textContent = todayVisits;
-        }
-
-        // تحديث جدول الزيارات
-        function updateVisitsTable() {
-            const tbody = document.querySelector('#visits-table tbody');
-            tbody.innerHTML = '';
-            
-            appData.visits.forEach(visit => {
-                const employee = appData.employees.find(e => e.id === visit.employeeId);
-                const restaurant = appData.restaurants.find(r => r.id === visit.restaurantId);
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${visit.id}</td>
-                    <td>${employee ? employee.name : 'غير معروف'}</td>
-                    <td>${restaurant ? restaurant.name : 'غير معروف'}</td>
-                    <td>${formatDate(visit.date)}</td>
-                    <td>${visit.checkIn}</td>
-                    <td>${visit.checkOut}</td>
-                    <td>${visit.duration.toFixed(2)} ساعة</td>
-                    <td>${visit.notes || 'لا يوجد'}</td>
-                    <td class="actions-cell">
-                        <button class="action-btn btn-warning" onclick="editVisit(${visit.id})">
-                            <i class="fas fa-edit"></i> تعديل
-                        </button>
-                        <button class="action-btn btn-danger" onclick="deleteVisit(${visit.id})">
-                            <i class="fas fa-trash"></i> حذف
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // تحديث جدول الزيارات الأخيرة
-        function updateRecentVisitsTable() {
-            const tbody = document.querySelector('#recent-visits tbody');
-            tbody.innerHTML = '';
-            
-            // أخذ آخر 5 زيارات
-            const recentVisits = [...appData.visits]
-                .sort((a, b) => new Date(b.date + ' ' + b.checkIn) - new Date(a.date + ' ' + a.checkIn))
-                .slice(0, 5);
-            
-            recentVisits.forEach(visit => {
-                const employee = appData.employees.find(e => e.id === visit.employeeId);
-                const restaurant = appData.restaurants.find(r => r.id === visit.restaurantId);
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${employee ? employee.name : 'غير معروف'}</td>
-                    <td>${restaurant ? restaurant.name : 'غير معروف'}</td>
-                    <td>${formatDate(visit.date)}</td>
-                    <td>${visit.checkIn}</td>
-                    <td>${visit.checkOut}</td>
-                    <td>${visit.duration.toFixed(2)} ساعة</td>
-                    <td><span class="badge badge-success">مكتملة</span></td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // تحديث جدول المطاعم
-        function updateRestaurantsTable() {
-            const tbody = document.querySelector('#restaurants-table tbody');
-            tbody.innerHTML = '';
-            
-            appData.restaurants.forEach(restaurant => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${restaurant.id}</td>
-                    <td>${restaurant.name}</td>
-                    <td>${restaurant.location || 'غير محدد'}</td>
-                    <td>${restaurant.areaManager || 'غير محدد'}</td>
-                    <td>${restaurant.operationsManager || 'غير محدد'}</td>
-                    <td>${restaurant.notes || 'لا يوجد'}</td>
-                    <td>${restaurant.visits || 0}</td>
-                    <td class="actions-cell">
-                        <button class="action-btn btn-primary" onclick="editRestaurant(${restaurant.id})">
-                            <i class="fas fa-edit"></i> تعديل
-                        </button>
-                        <button class="action-btn btn-danger" onclick="deleteRestaurant(${restaurant.id})">
-                            <i class="fas fa-trash"></i> حذف
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // تحديث جدول الموظفين
-        function updateEmployeesTable() {
-            const tbody = document.querySelector('#employees-table tbody');
-            tbody.innerHTML = '';
-            
-            appData.employees.forEach(employee => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${employee.id}</td>
-                    <td>${employee.name}</td>
-                    <td>${employee.department || 'غير محدد'}</td>
-                    <td>${employee.phone || 'غير محدد'}</td>
-                    <td>${employee.email || 'غير محدد'}</td>
-                    <td>${employee.visits || 0}</td>
-                    <td class="actions-cell">
-                        <button class="action-btn btn-primary" onclick="editEmployee(${employee.id})">
-                            <i class="fas fa-edit"></i> تعديل
-                        </button>
-                        <button class="action-btn btn-danger" onclick="deleteEmployee(${employee.id})">
-                            <i class="fas fa-trash"></i> حذف
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // إعداد نموذج تسجيل الزيارة
-        function setupVisitForm() {
-            const form = document.getElementById('visit-form');
-            const startVisitBtn = document.getElementById('start-visit');
-            const endVisitBtn = document.getElementById('end-visit');
-            
-            // إرسال النموذج
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveVisit();
-            });
-            
-            // بدء زيارة
-            startVisitBtn.addEventListener('click', function() {
-                const employeeId = document.getElementById('employee').value;
-                const restaurantId = document.getElementById('restaurant').value;
-                const visitDate = document.getElementById('visit-date').value;
-                
-                if (!employeeId || !restaurantId || !visitDate) {
-                    showMessage('form-message', 'يرجى ملء جميع الحقول المطلوبة', 'warning');
-                    return;
-                }
-                
-                // حفظ بيانات بدء الزيارة
-                appData.activeVisit = {
-                    employeeId: parseInt(employeeId),
-                    restaurantId: parseInt(restaurantId),
-                    date: visitDate,
-                    checkIn: getCurrentTime()
-                };
-                
-                // تعطيل زر البدء وتمكين زر الإنهاء
-                startVisitBtn.disabled = true;
-                endVisitBtn.disabled = false;
-                
-                showMessage('form-message', 'تم بدء الزيارة بنجاح. اضغط على زر إنهاء الزيارة عند الانتهاء.', 'success');
-            });
-            
-            // إنهاء زيارة
-            endVisitBtn.addEventListener('click', function() {
-                if (!appData.activeVisit) {
-                    showMessage('form-message', 'لا توجد زيارة نشطة', 'warning');
-                    return;
-                }
-                
-                // إضافة وقت الخروج
-                appData.activeVisit.checkOut = getCurrentTime();
-                
-                // حساب المدة
-                const checkInTime = appData.activeVisit.checkIn;
-                const checkOutTime = appData.activeVisit.checkOut;
-                const duration = calculateDuration(checkInTime, checkOutTime);
-                
-                // إضافة المدة والملاحظات
-                appData.activeVisit.duration = duration;
-                appData.activeVisit.notes = document.getElementById('notes').value;
-                appData.activeVisit.id = appData.nextVisitId++;
-                
-                // إضافة الزيارة إلى البيانات
-                appData.visits.push(appData.activeVisit);
-                
-                // تحديث عدد زيارات الموظف والمطعم
-                updateEmployeeVisitsCount(appData.activeVisit.employeeId);
-                updateRestaurantVisitsCount(appData.activeVisit.restaurantId);
-                
-                // حفظ البيانات
-                saveData();
-                
-                // إعادة تعيين النموذج
-                form.reset();
-                
-                // إعادة تمكين زر البدء وتعطيل زر الإنهاء
-                startVisitBtn.disabled = false;
-                endVisitBtn.disabled = true;
-                
-                // إعادة تعيين الزيارة النشطة
-                appData.activeVisit = null;
-                
-                // تحديث الجداول والإحصائيات
-                updateVisitsTable();
-                updateRecentVisitsTable();
-                updateStats();
-                
-                showMessage('form-message', 'تم تسجيل الزيارة بنجاح', 'success');
-            });
-        }
-
-        // حفظ زيارة يدوياً
-        function saveVisit() {
-            const employeeId = document.getElementById('employee').value;
-            const restaurantId = document.getElementById('restaurant').value;
-            const visitDate = document.getElementById('visit-date').value;
-            const checkIn = document.getElementById('check-in').value;
-            const checkOut = document.getElementById('check-out').value;
-            const notes = document.getElementById('notes').value;
-            
-            if (!employeeId || !restaurantId || !visitDate || !checkIn || !checkOut) {
-                showMessage('form-message', 'يرجى ملء جميع الحقول المطلوبة', 'warning');
-                return;
-            }
-            
-            // حساب المدة
-            const duration = calculateDuration(checkIn, checkOut);
-            
-            // إنشاء زيارة جديدة
-            const newVisit = {
-                id: appData.nextVisitId++,
-                employeeId: parseInt(employeeId),
-                restaurantId: parseInt(restaurantId),
-                date: visitDate,
-                checkIn: checkIn,
-                checkOut: checkOut,
-                duration: duration,
-                notes: notes
-            };
-            
-            // إضافة الزيارة إلى البيانات
-            appData.visits.push(newVisit);
-            
-            // تحديث عدد زيارات الموظف والمطعم
-            updateEmployeeVisitsCount(newVisit.employeeId);
-            updateRestaurantVisitsCount(newVisit.restaurantId);
-            
-            // حفظ البيانات
-            saveData();
-            
-            // إعادة تعيين النموذج
-            document.getElementById('visit-form').reset();
-            
-            // تحديث الجداول والإحصائيات
-            updateVisitsTable();
-            updateRecentVisitsTable();
-            updateStats();
-            
-            showMessage('form-message', 'تم تسجيل الزيارة بنجاح', 'success');
-        }
-
-        // إعداد نموذج المطاعم
-        function setupRestaurantForm() {
-            const form = document.getElementById('restaurant-form');
-            const updateBtn = document.getElementById('update-restaurant');
-            const cancelBtn = document.getElementById('cancel-restaurant');
-            
-            // إضافة مطعم جديد
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const name = document.getElementById('restaurant-name').value;
-                const location = document.getElementById('restaurant-location').value;
-                const areaManager = document.getElementById('area-manager').value;
-                const operationsManager = document.getElementById('operations-manager').value;
-                const notes = document.getElementById('restaurant-notes').value;
-                
-                if (!name) {
-                    showMessage('restaurant-message', 'يرجى إدخال اسم المطعم', 'warning');
-                    return;
-                }
-                
-                const newRestaurant = {
-                    id: appData.nextRestaurantId++,
-                    name: name,
-                    location: location,
-                    areaManager: areaManager,
-                    operationsManager: operationsManager,
-                    notes: notes,
-                    visits: 0
-                };
-                
-                appData.restaurants.push(newRestaurant);
-                saveData();
-                updateRestaurantsTable();
-                populateDropdowns();
-                form.reset();
-                
-                showMessage('restaurant-message', 'تم إضافة المطعم بنجاح', 'success');
-            });
-            
-            // تحديث مطعم
-            updateBtn.addEventListener('click', function() {
-                const id = parseInt(document.getElementById('restaurant-id').value);
-                const name = document.getElementById('restaurant-name').value;
-                const location = document.getElementById('restaurant-location').value;
-                const areaManager = document.getElementById('area-manager').value;
-                const operationsManager = document.getElementById('operations-manager').value;
-                const notes = document.getElementById('restaurant-notes').value;
-                
-                if (!name) {
-                    showMessage('restaurant-message', 'يرجى إدخال اسم المطعم', 'warning');
-                    return;
-                }
-                
-                const restaurantIndex = appData.restaurants.findIndex(r => r.id === id);
-                if (restaurantIndex !== -1) {
-                    appData.restaurants[restaurantIndex].name = name;
-                    appData.restaurants[restaurantIndex].location = location;
-                    appData.restaurants[restaurantIndex].areaManager = areaManager;
-                    appData.restaurants[restaurantIndex].operationsManager = operationsManager;
-                    appData.restaurants[restaurantIndex].notes = notes;
-                    
-                    saveData();
-                    updateRestaurantsTable();
-                    populateDropdowns();
-                    
-                    // العودة لوضع الإضافة
-                    form.reset();
-                    document.querySelector('button[type="submit"]').style.display = 'inline-block';
-                    updateBtn.style.display = 'none';
-                    cancelBtn.style.display = 'none';
-                    
-                    showMessage('restaurant-message', 'تم تحديث المطعم بنجاح', 'success');
-                }
-            });
-            
-            // إلغاء التحديث
-            cancelBtn.addEventListener('click', function() {
-                form.reset();
-                document.querySelector('button[type="submit"]').style.display = 'inline-block';
-                updateBtn.style.display = 'none';
-                cancelBtn.style.display = 'none';
-            });
-        }
-
-        // إعداد نموذج الموظفين
-        function setupEmployeeForm() {
-            const form = document.getElementById('employee-form');
-            const updateBtn = document.getElementById('update-employee');
-            const cancelBtn = document.getElementById('cancel-employee');
-            
-            // إضافة موظف جديد
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const name = document.getElementById('employee-name').value;
-                const department = document.getElementById('employee-department').value;
-                const phone = document.getElementById('employee-phone').value;
-                const email = document.getElementById('employee-email').value;
-                
-                if (!name) {
-                    showMessage('employee-message', 'يرجى إدخال اسم الموظف', 'warning');
-                    return;
-                }
-                
-                const newEmployee = {
-                    id: appData.nextEmployeeId++,
-                    name: name,
-                    department: department,
-                    phone: phone,
-                    email: email,
-                    visits: 0
-                };
-                
-                appData.employees.push(newEmployee);
-                saveData();
-                updateEmployeesTable();
-                populateDropdowns();
-                form.reset();
-                
-                showMessage('employee-message', 'تم إضافة الموظف بنجاح', 'success');
-            });
-            
-            // تحديث موظف
-            updateBtn.addEventListener('click', function() {
-                const id = parseInt(document.getElementById('employee-id').value);
-                const name = document.getElementById('employee-name').value;
-                const department = document.getElementById('employee-department').value;
-                const phone = document.getElementById('employee-phone').value;
-                const email = document.getElementById('employee-email').value;
-                
-                if (!name) {
-                    showMessage('employee-message', 'يرجى إدخال اسم الموظف', 'warning');
-                    return;
-                }
-                
-                const employeeIndex = appData.employees.findIndex(e => e.id === id);
-                if (employeeIndex !== -1) {
-                    appData.employees[employeeIndex].name = name;
-                    appData.employees[employeeIndex].department = department;
-                    appData.employees[employeeIndex].phone = phone;
-                    appData.employees[employeeIndex].email = email;
-                    
-                    saveData();
-                    updateEmployeesTable();
-                    populateDropdowns();
-                    
-                    // العودة لوضع الإضافة
-                    form.reset();
-                    document.querySelector('button[type="submit"]').style.display = 'inline-block';
-                    updateBtn.style.display = 'none';
-                    cancelBtn.style.display = 'none';
-                    
-                    showMessage('employee-message', 'تم تحديث الموظف بنجاح', 'success');
-                }
-            });
-            
-            // إلغاء التحديث
-            cancelBtn.addEventListener('click', function() {
-                form.reset();
-                document.querySelector('button[type="submit"]').style.display = 'inline-block';
-                updateBtn.style.display = 'none';
-                cancelBtn.style.display = 'none';
-            });
-        }
-
-        // إعداد التقارير
-        function setupReports() {
-            const generateBtn = document.getElementById('generate-report');
-            const printBtn = document.getElementById('print-report');
-            const exportPdfBtn = document.getElementById('export-pdf');
-            const reportType = document.getElementById('report-type');
-            
-            // إنشاء التقرير
-            generateBtn.addEventListener('click', function() {
-                const type = reportType.value;
-                generateReport(type);
-            });
-            
-            // طباعة التقرير
-            printBtn.addEventListener('click', function() {
-                window.print();
-            });
-            
-            // تصدير PDF
-            exportPdfBtn.addEventListener('click', function() {
-                exportReportToPDF();
-            });
-            
-            // تغيير نوع التقرير
-            reportType.addEventListener('change', function() {
-                generateReport(this.value);
-            });
-        }
-
-        // إنشاء التقرير
-        function generateReport(type) {
-            // إخفاء جميع التقارير
-            document.querySelectorAll('.section[id$="-report"]').forEach(el => {
-                el.style.display = 'none';
-            });
-            
-            // عرض التقرير المحدد
-            const reportElement = document.getElementById(`${type}-report`);
-            if (reportElement) {
-                reportElement.style.display = 'block';
-            }
-            
-            // توليد بيانات التقرير حسب النوع
-            switch(type) {
-                case 'all-visits':
-                    generateAllVisitsReport();
-                    break;
-                case 'restaurant-hours':
-                    generateRestaurantHoursReport();
-                    break;
-                case 'restaurants-visited':
-                    generateRestaurantsVisitedReport();
-                    break;
-                case 'employee-comparison':
-                    generateEmployeeComparisonReport();
-                    break;
-            }
-        }
-
-        // تصدير التقرير إلى PDF
-        async function exportReportToPDF() {
-            if (!window.jspdf) {
-                alert('مكتبة PDF غير محملة. يرجى الانتظار لحظة...');
-                return;
-            }
-            
-            try {
-                const reportType = document.getElementById('report-type').value;
-                const dateFrom = document.getElementById('date-from').value;
-                const dateTo = document.getElementById('date-to').value;
-                
-                // تحديث قالب PDF
-                updatePDFTemplate(reportType, dateFrom, dateTo);
-                
-                const element = document.getElementById('pdf-template');
-                
-                // إظهار العنصر مؤقتاً لالتقاط الصورة
-                const originalDisplay = element.style.display;
-                const originalPosition = element.style.position;
-                const originalLeft = element.style.left;
-                const originalTop = element.style.top;
-                const originalWidth = element.style.width;
-                const originalHeight = element.style.height;
-                const originalZIndex = element.style.zIndex;
-                
-                element.style.display = 'block';
-                element.style.position = 'fixed';
-                element.style.left = '0';
-                element.style.top = '0';
-                element.style.width = '794px';
-                element.style.height = '1123px';
-                element.style.zIndex = '10000';
-                element.style.background = 'white';
-                element.style.padding = '5px';
-                
-                // استخدام html2canvas لالتقاط الصورة
-                const canvas = await html2canvas(element, {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: '#FFFFFF',
-                    width: 794,
-                    height: 1123,
-                    windowWidth: 794,
-                    windowHeight: 1123
-                });
-                
-                // إعادة العنصر إلى وضعه الأصلي
-                element.style.display = originalDisplay;
-                element.style.position = originalPosition;
-                element.style.left = originalLeft;
-                element.style.top = originalTop;
-                element.style.width = originalWidth;
-                element.style.height = originalHeight;
-                element.style.zIndex = originalZIndex;
-                
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                const pdf = new window.jspdf.jsPDF('p', 'pt', 'a4');
-                
-                const imgWidth = pdf.internal.pageSize.getWidth();
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                
-                // إضافة الصورة إلى PDF
-                pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-                
-                // اسم الملف
-                const reportTypeNames = {
-                    'all-visits': 'جميع_الزيارات',
-                    'restaurant-hours': 'وقت_المطاعم',
-                    'restaurants-visited': 'المطاعم_المزارة',
-                    'employee-comparison': 'مقارنة_الموظفين'
-                };
-                
-                const fileName = `تقرير_${reportTypeNames[reportType]}_${formatDateForFileName(dateFrom)}_${formatDateForFileName(dateTo)}.pdf`;
-                pdf.save(fileName);
-                
-            } catch (error) {
-                console.error('Error generating PDF:', error);
-                alert('حدث خطأ أثناء إنشاء ملف PDF: ' + error.message);
-            }
-        }
-
-        // تحديث قالب PDF
-        function updatePDFTemplate(reportType, dateFrom, dateTo) {
-            const reportTypeNames = {
-                'all-visits': 'تقرير جميع الزيارات',
-                'restaurant-hours': 'تقرير إجمالي الوقت بالمطعم',
-                'restaurants-visited': 'تقرير المطاعم التي تمت زيارتها',
-                'employee-comparison': 'تقرير مقارنة الموظفين'
-            };
-            
-            document.getElementById('pdf-report-title').textContent = reportTypeNames[reportType] || 'تقرير';
-            document.getElementById('pdf-report-type').textContent = reportTypeNames[reportType] || 'غير محدد';
-            document.getElementById('pdf-start-date').textContent = dateFrom ? formatDate(dateFrom) : 'البداية';
-            document.getElementById('pdf-end-date').textContent = dateTo ? formatDate(dateTo) : 'النهاية';
-            document.getElementById('pdf-print-date').textContent = formatDate(new Date().toISOString().split('T')[0]);
-            
-            // إعداد جدول PDF حسب نوع التقرير
-            const pdfTableBody = document.getElementById('pdf-table-body');
-            pdfTableBody.innerHTML = '';
-            
-            let reportTable;
-            switch(reportType) {
-                case 'all-visits':
-                    reportTable = document.querySelector('#all-visits-report table');
-                    break;
-                case 'restaurant-hours':
-                    reportTable = document.querySelector('#restaurant-hours-report table');
-                    break;
-                case 'restaurants-visited':
-                    reportTable = document.querySelector('#restaurants-visited-report table');
-                    break;
-                case 'employee-comparison':
-                    reportTable = document.querySelector('#employee-comparison-report table');
-                    break;
-            }
-            
-            if (reportTable) {
-                const rows = reportTable.querySelectorAll('tr');
-                rows.forEach(row => {
-                    const pdfRow = document.createElement('tr');
-                    pdfRow.innerHTML = row.innerHTML;
-                    pdfTableBody.appendChild(pdfRow);
-                });
-            }
-            
-            // تحديث الملخص
-            const summaryElement = document.getElementById('pdf-summary');
-            const totalHours = document.getElementById('total-hours-report')?.textContent || '0';
-            summaryElement.innerHTML = `
-                <div style="font-weight: bold;">ملخص التقرير:</div>
-                <div>إجمالي الساعات: ${totalHours} ساعة</div>
-                <div>عدد السجلات: ${pdfTableBody.children.length} سجل</div>
-            `;
-        }
-
-        // تقرير جميع الزيارات
-        function generateAllVisitsReport() {
-            const tbody = document.getElementById('all-visits-body');
-            tbody.innerHTML = '';
-            
-            let totalHours = 0;
-            
-            // فلترة الزيارات حسب التاريخ إن وجد
-            const dateFrom = document.getElementById('date-from').value;
-            const dateTo = document.getElementById('date-to').value;
-            
-            let filteredVisits = [...appData.visits];
-            
-            if (dateFrom) {
-                filteredVisits = filteredVisits.filter(visit => visit.date >= dateFrom);
-            }
-            
-            if (dateTo) {
-                filteredVisits = filteredVisits.filter(visit => visit.date <= dateTo);
-            }
-            
-            filteredVisits.forEach(visit => {
-                const employee = appData.employees.find(e => e.id === visit.employeeId);
-                const restaurant = appData.restaurants.find(r => r.id === visit.restaurantId);
-                
-                totalHours += visit.duration;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${visit.id}</td>
-                    <td>${employee ? employee.name : 'غير معروف'}</td>
-                    <td>${restaurant ? restaurant.name : 'غير معروف'}</td>
-                    <td>${formatDate(visit.date)}</td>
-                    <td>${visit.checkIn}</td>
-                    <td>${visit.checkOut}</td>
-                    <td>${visit.duration.toFixed(2)}</td>
-                    <td>${visit.notes || 'لا يوجد'}</td>
-                `;
-                tbody.appendChild(row);
-            });
-            
-            document.getElementById('total-hours-report').textContent = totalHours.toFixed(2);
-        }
-
-        // تقرير إجمالي الوقت في كل مطعم
-        function generateRestaurantHoursReport() {
-            const tbody = document.getElementById('restaurant-hours-body');
-            tbody.innerHTML = '';
-            
-            // حساب إجمالي الوقت لكل مطعم
-            const restaurantStats = {};
-            
-            appData.visits.forEach(visit => {
-                const restaurant = appData.restaurants.find(r => r.id === visit.restaurantId);
-                if (restaurant) {
-                    if (!restaurantStats[restaurant.id]) {
-                        restaurantStats[restaurant.id] = {
-                            name: restaurant.name,
-                            visits: 0,
-                            totalHours: 0
-                        };
-                    }
-                    restaurantStats[restaurant.id].visits++;
-                    restaurantStats[restaurant.id].totalHours += visit.duration;
-                }
-            });
-            
-            // حساب إجمالي الساعات لجميع المطاعم
-            const totalAllHours = Object.values(restaurantStats).reduce((sum, stat) => sum + stat.totalHours, 0);
-            
-            // عرض الإحصائيات
-            Object.values(restaurantStats).forEach(stat => {
-                const percentage = totalAllHours > 0 ? (stat.totalHours / totalAllHours * 100).toFixed(1) : 0;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${stat.name}</td>
-                    <td>${stat.visits}</td>
-                    <td>${stat.totalHours.toFixed(2)}</td>
-                    <td>
-                        <div class="progress-bar">
-                            <div class="progress" style="width: ${percentage}%"></div>
-                        </div>
-                        ${percentage}%
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // تقرير المطاعم التي تمت زيارتها خلال فترة
-        function generateRestaurantsVisitedReport() {
-            const tbody = document.getElementById('restaurants-visited-body');
-            tbody.innerHTML = '';
-            
-            // فلترة الزيارات حسب التاريخ إن وجد
-            const dateFrom = document.getElementById('date-from').value;
-            const dateTo = document.getElementById('date-to').value;
-            
-            let filteredVisits = [...appData.visits];
-            
-            if (dateFrom) {
-                filteredVisits = filteredVisits.filter(visit => visit.date >= dateFrom);
-            }
-            
-            if (dateTo) {
-                filteredVisits = filteredVisits.filter(visit => visit.date <= dateTo);
-            }
-            
-            // تجميع بيانات المطاعم
-            const restaurantStats = {};
-            
-            filteredVisits.forEach(visit => {
-                const restaurant = appData.restaurants.find(r => r.id === visit.restaurantId);
-                if (restaurant) {
-                    if (!restaurantStats[restaurant.id]) {
-                        restaurantStats[restaurant.id] = {
-                            name: restaurant.name,
-                            firstVisit: visit.date,
-                            lastVisit: visit.date,
-                            visitCount: 0,
-                            employees: new Set()
-                        };
-                    }
-                    
-                    restaurantStats[restaurant.id].visitCount++;
-                    restaurantStats[restaurant.id].employees.add(visit.employeeId);
-                    
-                    if (visit.date < restaurantStats[restaurant.id].firstVisit) {
-                        restaurantStats[restaurant.id].firstVisit = visit.date;
-                    }
-                    
-                    if (visit.date > restaurantStats[restaurant.id].lastVisit) {
-                        restaurantStats[restaurant.id].lastVisit = visit.date;
-                    }
-                }
-            });
-            
-            // عرض الإحصائيات
-            Object.values(restaurantStats).forEach(stat => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${stat.name}</td>
-                    <td>${formatDate(stat.firstVisit)}</td>
-                    <td>${formatDate(stat.lastVisit)}</td>
-                    <td>${stat.visitCount}</td>
-                    <td>${stat.employees.size}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // تقرير مقارنة الموظفين
-        function generateEmployeeComparisonReport() {
-            const tbody = document.getElementById('employee-comparison-body');
-            tbody.innerHTML = '';
-            
-            // حساب إحصائيات الموظفين
-            const employeeStats = {};
-            
-            appData.visits.forEach(visit => {
-                const employee = appData.employees.find(e => e.id === visit.employeeId);
-                if (employee) {
-                    if (!employeeStats[employee.id]) {
-                        employeeStats[employee.id] = {
-                            name: employee.name,
-                            visitCount: 0,
-                            totalHours: 0,
-                            restaurants: new Set()
-                        };
-                    }
-                    
-                    employeeStats[employee.id].visitCount++;
-                    employeeStats[employee.id].totalHours += visit.duration;
-                    employeeStats[employee.id].restaurants.add(visit.restaurantId);
-                }
-            });
-            
-            // عرض الإحصائيات
-            Object.values(employeeStats).forEach(stat => {
-                const avgDuration = stat.visitCount > 0 ? stat.totalHours / stat.visitCount : 0;
-                const restaurantNames = Array.from(stat.restaurants)
-                    .map(id => {
-                        const restaurant = appData.restaurants.find(r => r.id === id);
-                        return restaurant ? restaurant.name : 'غير معروف';
-                    })
-                    .join(', ');
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${stat.name}</td>
-                    <td>${stat.visitCount}</td>
-                    <td>${stat.totalHours.toFixed(2)}</td>
-                    <td>${avgDuration.toFixed(2)}</td>
-                    <td>${stat.restaurants.size}</td>
-                    <td>${restaurantNames || 'لا يوجد'}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // وظائف مساعدة
-        function showMessage(elementId, message, type) {
-            const messageElement = document.getElementById(elementId);
-            messageElement.textContent = message;
-            messageElement.className = `alert alert-${type}`;
-            messageElement.style.display = 'flex';
-            
-            // إخفاء الرسالة بعد 5 ثوانٍ
-            setTimeout(() => {
-                messageElement.style.display = 'none';
-            }, 5000);
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            try {
-                const date = new Date(dateString);
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}-${month}-${year}`;
-            } catch {
-                return dateString;
-            }
-        }
-
-        function formatDateForFileName(dateString) {
-            if (!dateString) return 'كل_التواريخ';
-            try {
-                const date = new Date(dateString);
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}${month}${year}`;
-            } catch {
-                return 'تاريخ';
-            }
-        }
-
-        function getCurrentTime() {
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            return `${hours}:${minutes}`;
-        }
-
-        function calculateDuration(checkIn, checkOut) {
-            const [inHours, inMinutes] = checkIn.split(':').map(Number);
-            const [outHours, outMinutes] = checkOut.split(':').map(Number);
-            
-            const inTotalMinutes = inHours * 60 + inMinutes;
-            const outTotalMinutes = outHours * 60 + outMinutes;
-            
-            // إذا كان وقت الخروج قبل وقت الدخول (عبر منتصف الليل)
-            let durationMinutes = outTotalMinutes - inTotalMinutes;
-            if (durationMinutes < 0) {
-                durationMinutes += 24 * 60; // إضافة 24 ساعة
-            }
-            
-            return durationMinutes / 60; // تحويل إلى ساعات
-        }
-
-        function updateEmployeeVisitsCount(employeeId) {
-            const employee = appData.employees.find(e => e.id === employeeId);
-            if (employee) {
-                employee.visits = (employee.visits || 0) + 1;
-            }
-        }
-
-        function updateRestaurantVisitsCount(restaurantId) {
-            const restaurant = appData.restaurants.find(r => r.id === restaurantId);
-            if (restaurant) {
-                restaurant.visits = (restaurant.visits || 0) + 1;
-            }
-        }
-
-        function setTodayDate() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('visit-date').value = today;
-            document.getElementById('date-from').value = today;
-            document.getElementById('date-to').value = today;
-        }
-
-        // وظائف التعديل والحذف
-        function editVisit(id) {
-            const visit = appData.visits.find(v => v.id === id);
-            if (!visit) return;
-            
-            // تعبئة النموذج ببيانات الزيارة
-            document.getElementById('employee').value = visit.employeeId;
-            document.getElementById('restaurant').value = visit.restaurantId;
-            document.getElementById('visit-date').value = visit.date;
-            document.getElementById('check-in').value = visit.checkIn;
-            document.getElementById('check-out').value = visit.checkOut;
-            document.getElementById('notes').value = visit.notes;
-            
-            // التمرير إلى قسم الزيارات
-            document.querySelector('.nav-tab[data-page="visits"]').click();
-            
-            showMessage('form-message', 'يمكنك تعديل بيانات الزيارة وحفظها كزيارة جديدة', 'info');
-        }
-
-        function deleteVisit(id) {
-            if (confirm('هل أنت متأكد من حذف هذه الزيارة؟')) {
-                const visitIndex = appData.visits.findIndex(v => v.id === id);
-                if (visitIndex !== -1) {
-                    const visit = appData.visits[visitIndex];
-                    
-                    // تحديث عدد زيارات الموظف والمطعم
-                    const employee = appData.employees.find(e => e.id === visit.employeeId);
-                    if (employee && employee.visits > 0) {
-                        employee.visits--;
-                    }
-                    
-                    const restaurant = appData.restaurants.find(r => r.id === visit.restaurantId);
-                    if (restaurant && restaurant.visits > 0) {
-                        restaurant.visits--;
-                    }
-                    
-                    // حذف الزيارة
-                    appData.visits.splice(visitIndex, 1);
-                    saveData();
-                    
-                    // تحديث الجداول والإحصائيات
-                    updateVisitsTable();
-                    updateRecentVisitsTable();
-                    updateStats();
-                    
-                    showMessage('form-message', 'تم حذف الزيارة بنجاح', 'success');
-                }
-            }
-        }
-
-        function editRestaurant(id) {
-            const restaurant = appData.restaurants.find(r => r.id === id);
-            if (!restaurant) return;
-            
-            // تعبئة النموذج ببيانات المطعم
-            document.getElementById('restaurant-id').value = restaurant.id;
-            document.getElementById('restaurant-name').value = restaurant.name;
-            document.getElementById('restaurant-location').value = restaurant.location || '';
-            document.getElementById('area-manager').value = restaurant.areaManager || '';
-            document.getElementById('operations-manager').value = restaurant.operationsManager || '';
-            document.getElementById('restaurant-notes').value = restaurant.notes || '';
-            
-            // إظهار أزرار التحديث والإلغاء وإخفاء زر الإضافة
-            document.querySelector('#restaurant-form button[type="submit"]').style.display = 'none';
-            document.getElementById('update-restaurant').style.display = 'inline-block';
-            document.getElementById('cancel-restaurant').style.display = 'inline-block';
-            
-            showMessage('restaurant-message', 'يمكنك تعديل بيانات المطعم', 'info');
-        }
-
-        function deleteRestaurant(id) {
-            if (confirm('هل أنت متأكد من حذف هذا المطعم؟ سيتم حذف جميع الزيارات المرتبطة به.')) {
-                // حذف الزيارات المرتبطة بالمطعم
-                appData.visits = appData.visits.filter(v => v.restaurantId !== id);
-                
-                // حذف المطعم
-                const restaurantIndex = appData.restaurants.findIndex(r => r.id === id);
-                if (restaurantIndex !== -1) {
-                    appData.restaurants.splice(restaurantIndex, 1);
-                }
-                
-                saveData();
-                updateRestaurantsTable();
-                updateVisitsTable();
-                updateRecentVisitsTable();
-                populateDropdowns();
-                updateStats();
-                
-                showMessage('restaurant-message', 'تم حذف المطعم بنجاح', 'success');
-            }
-        }
-
-        function editEmployee(id) {
-            const employee = appData.employees.find(e => e.id === id);
-            if (!employee) return;
-            
-            // تعبئة النموذج ببيانات الموظف
-            document.getElementById('employee-id').value = employee.id;
-            document.getElementById('employee-name').value = employee.name;
-            document.getElementById('employee-department').value = employee.department || '';
-            document.getElementById('employee-phone').value = employee.phone || '';
-            document.getElementById('employee-email').value = employee.email || '';
-            
-            // إظهار أزرار التحديث والإلغاء وإخفاء زر الإضافة
-            document.querySelector('#employee-form button[type="submit"]').style.display = 'none';
-            document.getElementById('update-employee').style.display = 'inline-block';
-            document.getElementById('cancel-employee').style.display = 'inline-block';
-            
-            showMessage('employee-message', 'يمكنك تعديل بيانات الموظف', 'info');
-        }
-
-        function deleteEmployee(id) {
-            if (confirm('هل أنت متأكد من حذف هذا الموظف؟ سيتم حذف جميع الزيارات المرتبطة به.')) {
-                // حذف الزيارات المرتبطة بالموظف
-                appData.visits = appData.visits.filter(v => v.employeeId !== id);
-                
-                // حذف الموظف
-                const employeeIndex = appData.employees.findIndex(e => e.id === id);
-                if (employeeIndex !== -1) {
-                    appData.employees.splice(employeeIndex, 1);
-                }
-                
-                saveData();
-                updateEmployeesTable();
-                updateVisitsTable();
-                updateRecentVisitsTable();
-                populateDropdowns();
-                updateStats();
-                
-                showMessage('employee-message', 'تم حذف الموظف بنجاح', 'success');
-            }
-        }
-    </script>
+function loadDB(){
+ try{
+  const d=JSON.parse(localStorage.getItem(KEY));
+  if(d&&Array.isArray(d.restaurants)&&Array.isArray(d.visits))return d;
+ }catch(e){}
+ // ترحيل بيانات النسخة السابقة إن وجدت
+ try{
+  const old=JSON.parse(localStorage.getItem("naifRestaurantVisits_v1"));
+  if(old&&Array.isArray(old.restaurants)&&Array.isArray(old.visits))return old;
+ }catch(e){}
+ return {restaurants:initialRestaurants,visits:[]};
+}
+function saveDB(){localStorage.setItem(KEY,JSON.stringify(db))}
+function $(id){return document.getElementById(id)}
+function pad(n){return String(n).padStart(2,"0")}
+function dateString(d=new Date()){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function timeString(d=new Date()){return pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds())}
+function fmtDate(s){if(!s)return "—";let a=s.split("-");return a[2]+"/"+a[1]+"/"+a[0]}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function toast(s){let t=$("toast");t.textContent=s;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2600)}
+function visitorName(){return $("visitorName").value.trim()}
+function activeVisit(name){return db.visits.find(v=>v.restaurant===name&&!v.exitAt)}
+function duration(v){
+ if(!v.entryAt)return "—";
+ let ms=(v.exitAt?new Date(v.exitAt):new Date())-new Date(v.entryAt);
+ let mins=Math.max(0,Math.floor(ms/60000));
+ return Math.floor(mins/60)+" ساعة "+(mins%60)+" دقيقة";
+}
+function setDefaultDates(){
+ const d=new Date();
+ const first=d.getFullYear()+"-"+pad(d.getMonth()+1)+"-01";
+ $("repFrom").value=first;$("repTo").value=dateString(d);
+}
+function visitRestaurant(name){
+ const who=visitorName();
+ if(!who){$("visitorName").focus();toast("يرجى كتابة اسم منفّذ الزيارة أولاً");return}
+ localStorage.setItem("naifLastVisitor",who);
+ const open=activeVisit(name),now=new Date();
+ if(open){
+  open.exitAt=now.toISOString();open.exitDate=dateString(now);open.exitTime=timeString(now);
+  saveDB();toast("تم تسجيل الخروج من "+name);
+ }else{
+  const r=db.restaurants.find(x=>x.name===name);
+  db.visits.unshift({
+   id:Date.now()+"_"+Math.random().toString(16).slice(2),
+   restaurant:name,area:r?.area||"",ops:r?.ops||"",visitor:who,
+   entryAt:now.toISOString(),entryDate:dateString(now),entryTime:timeString(now),
+   exitAt:"",exitDate:"",exitTime:"",alerted:false
+  });
+  saveDB();toast("تم تسجيل الدخول إلى "+name);
+ }
+ renderAll();
+}
+function renderRestaurants(){
+ const q=$("restaurantSearch").value.trim().toLowerCase();
+ const colors=["#edf6ff","#f0f6ff","#edf8f5","#f5f1ff","#fff6e9","#eef7f8"];
+ const items=db.restaurants.filter(r=>r.name.toLowerCase().includes(q));
+ $("restaurantGrid").innerHTML=items.map((r,i)=>{
+  const op=activeVisit(r.name);
+  return `<button type="button" class="restaurant-card ${op?"open":""}" data-restaurant="${esc(r.name)}" style="background:${op?"#fff3dc":colors[i%colors.length]}">
+   <span class="rname">${esc(r.name)}</span>
+   <span class="meta"><span>${op?"● زيارة مفتوحة - اضغط للخروج":"اضغط لتسجيل الدخول"}</span><span>${esc(r.ops||"")}</span></span>
+  </button>`;
+ }).join("")||'<div class="empty">لا توجد نتائج</div>';
+}
+function visitRow(v,i){
+ return `<tr><td>${i+1}</td><td>${esc(v.restaurant)}</td><td>${esc(v.area)}</td><td>${esc(v.ops)}</td><td>${esc(v.visitor)}</td>
+ <td class="ltr">${fmtDate(v.entryDate)}</td><td class="ltr">${v.entryTime||"—"}</td>
+ <td class="ltr">${fmtDate(v.exitDate)}</td><td class="ltr">${v.exitTime||"—"}</td><td>${duration(v)}
+ </td><td><span class="status ${v.exitAt?"done":"open"}">${v.exitAt?"مكتملة":"مفتوحة"}</span></td></tr>`;
+}
+function renderRecent(){
+ $("recentRows").innerHTML=db.visits.slice(0,7).map((v,i)=>`<tr><td>${esc(v.restaurant)}</td><td>${esc(v.visitor)}</td><td>${fmtDate(v.entryDate)}</td><td class="ltr">${v.entryTime}</td><td class="ltr">${v.exitTime||"—"}</td><td><span class="status ${v.exitAt?"done":"open"}">${v.exitAt?"مكتملة":"مفتوحة"}</span></td></tr>`).join("")||'<tr><td colspan="6" class="empty">لا توجد زيارات بعد</td></tr>';
+}
+function filteredVisits(){
+ const q=($("visitSearch").value||"").trim().toLowerCase(),from=$("visitFrom").value,to=$("visitTo").value;
+ return db.visits.filter(v=>(!q||[v.restaurant,v.visitor,v.area,v.ops].some(x=>(x||"").toLowerCase().includes(q)))&&(!from||v.entryDate>=from)&&(!to||v.entryDate<=to));
+}
+function renderVisits(){
+ const arr=filteredVisits();
+ $("visitRows").innerHTML=arr.map(visitRow).join("")||'<tr><td colspan="11" class="empty">لا توجد زيارات مطابقة</td></tr>';
+ $("visitCount").textContent="عدد السجلات: "+arr.length;
+}
+function buildReport(){
+ const from=$("repFrom").value,to=$("repTo").value;
+ const area=$("repArea").value.trim(),ops=$("repOps").value.trim();
+ const rest=$("repRestaurant").value.trim(),vis=$("repVisitor").value.trim();
+ reportResults=db.visits.filter(v=>
+  (!from||v.entryDate>=from)&&(!to||v.entryDate<=to)&&
+  (!area||v.area===area)&&(!ops||v.ops===ops)&&
+  (!rest||v.restaurant===rest)&&(!vis||v.visitor===vis)
+ );
+ $("repTotal").textContent=reportResults.length;
+ $("repDone").textContent=reportResults.filter(v=>v.exitAt).length;
+ $("repOpen").textContent=reportResults.filter(v=>!v.exitAt).length;
+ $("reportRows").innerHTML=reportResults.map(visitRow).join("")||'<tr><td colspan="11" class="empty">لا توجد نتائج مطابقة</td></tr>';
+}
+function resetReport(){
+ ["repArea","repOps","repRestaurant","repVisitor"].forEach(id=>$(id).value="");
+ setDefaultDates();buildReport();
+}
+function renderManage(){
+ const q=$("manageSearch").value.trim().toLowerCase();
+ const arr=db.restaurants.filter(r=>r.name.toLowerCase().includes(q));
+ $("manageRows").innerHTML=arr.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.name)}</td><td>${esc(r.area)}</td><td>${esc(r.ops)}</td>
+ <td><button class="btn soft" data-edit="${esc(r.name)}">تعديل</button>
+ <button class="btn danger" data-delete="${esc(r.name)}">حذف</button></td></tr>`).join("")||'<tr><td colspan="5" class="empty">لا توجد مطاعم</td></tr>';
+}
+function renderStats(){
+ const today=dateString();
+ $("statRestaurants").textContent=db.restaurants.length;
+ $("statToday").textContent=db.visits.filter(v=>v.entryDate===today).length;
+ $("statOpen").textContent=db.visits.filter(v=>!v.exitAt).length;
+ $("statAll").textContent=db.visits.length;
+}
+function renderAll(){
+ renderStats();renderRestaurants();renderRecent();renderVisits();renderManage();buildReport();
+}
+function showPage(id){
+ document.querySelectorAll(".page").forEach(x=>x.classList.add("hidden"));
+ $(id).classList.remove("hidden");
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
+ if(id==="reports")buildReport();
+ if(id==="visits")renderVisits();
+ if(id==="manage")renderManage();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function openModal(name=null){
+ editingOldName=name;
+ $("modalTitle").textContent=name?"تعديل بيانات المطعم":"إضافة مطعم جديد";
+ const r=name?db.restaurants.find(x=>x.name===name):{name:"",area:"",ops:""};
+ $("editName").value=r?.name||"";$("editArea").value=r?.area||"";$("editOps").value=r?.ops||"";
+ $("deleteRestaurant").classList.toggle("hidden",!name);
+ $("modalBg").classList.remove("hidden");
+}
+function closeModal(){$("modalBg").classList.add("hidden")}
+function saveRestaurant(){
+ const name=$("editName").value.trim(),area=$("editArea").value.trim(),ops=$("editOps").value.trim();
+ if(!name){toast("يرجى كتابة اسم المطعم");return}
+ if(db.restaurants.some(r=>r.name.toLowerCase()===name.toLowerCase()&&r.name!==editingOldName)){toast("اسم المطعم موجود بالفعل");return}
+ if(editingOldName){
+  const r=db.restaurants.find(x=>x.name===editingOldName);
+  if(!r)return;
+  r.name=name;r.area=area;r.ops=ops;
+  db.visits.forEach(v=>{if(v.restaurant===editingOldName){v.restaurant=name;v.area=area;v.ops=ops}});
+  toast("تم تعديل بيانات المطعم");
+ }else{
+  db.restaurants.push({name,area,ops});toast("تمت إضافة المطعم");
+ }
+ saveDB();closeModal();renderAll();
+}
+function deleteRestaurant(){
+ if(!editingOldName)return;
+ const name=editingOldName;
+ if(!confirm("هل تريد حذف المطعم "+name+" من قائمة المطاعم؟ ستبقى الزيارات السابقة محفوظة في السجل."))return;
+ if(activeVisit(name)){toast("لا يمكن حذف مطعم لديه زيارة مفتوحة");return}
+ db.restaurants=db.restaurants.filter(r=>r.name!==name);
+ saveDB();closeModal();renderAll();toast("تم حذف المطعم");
+}
+function exportExcel(arr){
+ if(typeof XLSX==="undefined"){alert("تعذر تحميل مكتبة Excel. تأكد من الاتصال بالإنترنت ثم أعد المحاولة.");return}
+ const rows=arr.map((v,i)=>({
+  "#":i+1,"المطعم":v.restaurant,"مدير المنطقة":v.area,"مدير التشغيل":v.ops,
+  "منفذ الزيارة":v.visitor,"تاريخ الدخول":v.entryDate,"وقت الدخول":v.entryTime,
+  "تاريخ الخروج":v.exitDate||"","وقت الخروج":v.exitTime||"",
+  "المدة":duration(v),"الحالة":v.exitAt?"مكتملة":"مفتوحة"
+ }));
+ const ws=XLSX.utils.json_to_sheet(rows);
+ ws["!cols"]=[{wch:6},{wch:28},{wch:20},{wch:20},{wch:24},{wch:14},{wch:14},{wch:14},{wch:14},{wch:20},{wch:14}];
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Visits");
+ XLSX.writeFile(wb,"Naif_Restaurant_Visits.xlsx");
+}
+function printTable(title,arr){
+ const rows=arr.map((v,i)=>`<tr><td>${i+1}</td><td>${esc(v.restaurant)}</td><td>${esc(v.area)}</td><td>${esc(v.ops)}</td><td>${esc(v.visitor)}</td><td>${fmtDate(v.entryDate)} ${v.entryTime||""}</td><td>${fmtDate(v.exitDate)} ${v.exitTime||""}</td><td>${duration(v)}</td><td>${v.exitAt?"مكتملة":"مفتوحة"}</td></tr>`).join("");
+ const w=window.open("","_blank");
+ if(!w){alert("يرجى السماح بالنوافذ المنبثقة حتى يتم إنشاء التقرير");return}
+ w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title}</title>
+ <style>body{font-family:Tahoma,Arial;margin:25px;color:#222}header{display:flex;align-items:center;gap:15px;border-bottom:3px solid #c62828;padding-bottom:12px}header img{width:75px;height:65px;object-fit:contain}h2{text-align:center;margin:22px 0}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #aaa;padding:7px;text-align:right}th{background:#eaf2f8}footer{margin-top:20px;font-size:11px}@media print{@page{size:A4 landscape;margin:10mm}}</style>
+ </head><body><header><img src="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg"><div><b>شركة نايف للأغذية</b><div>نظام تسجيل زيارات المطاعم</div></div></header>
+ <h2>${title}</h2><p>الفترة: ${$("repFrom").value?fmtDate($("repFrom").value):"—"} إلى ${$("repTo").value?fmtDate($("repTo").value):"—"}</p>
+ <table><thead><tr><th>#</th><th>المطعم</th><th>مدير المنطقة</th><th>مدير التشغيل</th><th>منفذ الزيارة</th><th>الدخول</th><th>الخروج</th><th>المدة</th><th>الحالة</th></tr></thead><tbody>${rows}</tbody></table>
+ <footer>شركة نايف للأغذية - تقرير زيارات المطاعم</footer><script>window.onload=()=>setTimeout(()=>window.print(),500)<\/script></body></html>`);
+ w.document.close();
+}
+function backupJSON(){
+ const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+ downloadBlob(blob,"Naif_Visits_Backup.json");
+}
+function downloadBlob(blob,name){
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function restoreJSON(file){
+ const reader=new FileReader();
+ reader.onload=()=>{
+  try{
+   const x=JSON.parse(reader.result);
+   if(!Array.isArray(x.restaurants)||!Array.isArray(x.visits))throw Error();
+   if(confirm("سيتم استبدال البيانات الحالية. هل تريد المتابعة؟")){
+    db=x;saveDB();renderAll();toast("تم استيراد النسخة الاحتياطية");
+   }
+  }catch(e){alert("ملف النسخة الاحتياطية غير صالح")}
+ };
+ reader.readAsText(file);
+}
+function smartOptions(source){
+ if(source==="restaurants")return db.restaurants.map(x=>x.name);
+ if(source==="areas")return [...new Set(db.restaurants.map(x=>x.area).filter(Boolean))];
+ if(source==="ops")return [...new Set(db.restaurants.map(x=>x.ops).filter(Boolean))];
+ if(source==="visitors")return [...new Set(db.visits.map(x=>x.visitor).filter(Boolean))];
+ if(source==="visitSearch")return [...new Set([...db.restaurants.map(x=>x.name),...db.visits.map(x=>x.visitor).filter(Boolean)])];
+ return [];
+}
+function initSmartSearch(){
+ document.querySelectorAll("input.smart").forEach(inp=>{
+  const box=document.createElement("div");box.className="suggest hidden";inp.parentElement.appendChild(box);
+  function update(){
+   const q=inp.value.trim().toLowerCase();
+   if(!q){box.classList.add("hidden");return}
+   const matches=smartOptions(inp.dataset.source).filter(x=>x.toLowerCase().includes(q)).slice(0,10);
+   box.innerHTML=matches.map(x=>`<button type="button">${esc(x)}</button>`).join("");
+   box.classList.toggle("hidden",!matches.length);
+   box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    inp.value=b.textContent;box.classList.add("hidden");
+    inp.dispatchEvent(new Event("input",{bubbles:true}));
+   }));
+  }
+  inp.addEventListener("input",()=>{
+   update();
+   if(inp.id==="restaurantSearch")renderRestaurants();
+   if(inp.id==="manageSearch")renderManage();
+   if(inp.id==="visitSearch")renderVisits();
+   if(inp.id.startsWith("rep"))buildReport();
+  });
+  inp.addEventListener("focus",update);
+  inp.addEventListener("keydown",e=>{
+   if(e.key==="Escape")box.classList.add("hidden");
+   if(e.key==="Enter"&&!box.classList.contains("hidden")){
+    const b=box.querySelector("button");if(b){e.preventDefault();b.click()}
+   }
+  });
+  document.addEventListener("click",e=>{if(!inp.parentElement.contains(e.target))box.classList.add("hidden")});
+ });
+}
+function playAlert(){
+ try{
+  if(!audioContext)audioContext=new(window.AudioContext||window.webkitAudioContext)();
+  if(audioContext.state==="suspended")audioContext.resume();
+  const osc=audioContext.createOscillator(),gain=audioContext.createGain();
+  osc.connect(gain);gain.connect(audioContext.destination);
+  osc.frequency.value=880;gain.gain.value=.18;
+  osc.start();osc.stop(audioContext.currentTime+.35);
+ }catch(e){}
+}
+function checkLongVisits(){
+ if(!soundEnabled)return;
+ const now=Date.now();let changed=false;
+ db.visits.forEach(v=>{
+  if(!v.exitAt&&!v.alerted&&v.entryAt&&now-new Date(v.entryAt).getTime()>=3600000){
+   v.alerted=true;changed=true;playAlert();
+   toast("تنبيه: الزيارة في "+v.restaurant+" تجاوزت ساعة دون تسجيل خروج");
+  }
+ });
+ if(changed)saveDB();
+}
+function tick(){
+ const d=new Date();
+ $("liveDate").textContent=dateString(d).split("-").reverse().join("/");
+ $("liveClock").textContent=timeString(d);
+}
+document.addEventListener("click",e=>{
+ const restaurant=e.target.closest("[data-restaurant]");
+ if(restaurant){visitRestaurant(restaurant.dataset.restaurant);return}
+ const edit=e.target.closest("[data-edit]");
+ if(edit){openModal(edit.dataset.edit);return}
+ const del=e.target.closest("[data-delete]");
+ if(del){openModal(del.dataset.delete);deleteRestaurant();return}
+ const page=e.target.closest("[data-page]");
+ if(page){showPage(page.dataset.page);return}
+ const go=e.target.closest("[data-goto]");
+ if(go){showPage(go.dataset.goto);return}
+});
+$("visitorName").value=localStorage.getItem("naifLastVisitor")||"";
+$("visitorName").addEventListener("change",()=>localStorage.setItem("naifLastVisitor",visitorName()));
+$("visitorName").addEventListener("blur",()=>{if(visitorName())localStorage.setItem("naifLastVisitor",visitorName())});
+$("restaurantSearch").addEventListener("input",renderRestaurants);
+$("manageSearch").addEventListener("input",renderManage);
+$("visitSearch").addEventListener("input",renderVisits);
+$("searchVisits").addEventListener("click",renderVisits);
+$("clearVisits").addEventListener("click",()=>{["visitSearch","visitFrom","visitTo"].forEach(id=>$(id).value="");renderVisits()});
+$("buildReport").addEventListener("click",buildReport);
+$("resetReport").addEventListener("click",resetReport);
+$("addRestaurant").addEventListener("click",()=>openModal());
+$("saveRestaurant").addEventListener("click",saveRestaurant);
+$("deleteRestaurant").addEventListener("click",deleteRestaurant);
+$("cancelModal").addEventListener("click",closeModal);
+$("modalBg").addEventListener("click",e=>{if(e.target===$("modalBg"))closeModal()});
+$("excelVisits").addEventListener("click",()=>exportExcel(filteredVisits()));
+$("excelReport").addEventListener("click",()=>exportExcel(reportResults));
+$("printVisits").addEventListener("click",()=>printTable("سجل زيارات المطاعم",filteredVisits()));
+$("printReport").addEventListener("click",()=>printTable("تقرير زيارات المطاعم",reportResults));
+$("backupButton").addEventListener("click",backupJSON);
+$("restoreFile").addEventListener("change",e=>{if(e.target.files[0])restoreJSON(e.target.files[0]);e.target.value=""});
+$("soundButton").addEventListener("click",()=>{
+ soundEnabled=!soundEnabled;
+ if(soundEnabled){playAlert();$("soundStatus").textContent="التنبيه الصوتي مفعل";$("soundButton").textContent="إيقاف التنبيه الصوتي"}
+ else{$("soundStatus").textContent="التنبيه الصوتي غير مفعل";$("soundButton").textContent="تفعيل التنبيه الصوتي"}
+});
+initSmartSearch();
+setDefaultDates();
+tick();setInterval(tick,1000);
+setInterval(checkLongVisits,15000);
+renderAll();
+</script>
 </body>
 </html>
