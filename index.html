@@ -125,7 +125,7 @@ tbody tr:last-child td{border-bottom:0}
   <div class="panel">
    <div class="panel-title">
     <div><h2>تسجيل زيارة مطعم</h2><div class="sub">الضغطة الأولى لتسجيل الدخول والثانية لتسجيل الخروج (مزامنة فورية عبر Firebase)</div></div>
-    <span class="status open" id="syncStatusIndicator">● متصل بـ Firebase</span>
+    <span class="status open" id="syncStatusIndicator">● جاري الاتصال بـ Firebase...</span>
    </div>
    <div class="toolbar">
     <div class="field">
@@ -228,6 +228,7 @@ tbody tr:last-child td{border-bottom:0}
 
 <div id="toast" class="toast"></div>
 
+<!-- Modal إضافة وتعديل المطاعم -->
 <div id="modalBg" class="modal-bg hidden">
  <div class="modal">
   <h3 id="modalTitle">إضافة مطعم</h3>
@@ -238,6 +239,21 @@ tbody tr:last-child td{border-bottom:0}
    <button class="btn primary" id="saveRestaurant">حفظ</button>
    <button class="btn danger hidden" id="deleteRestaurant">حذف المطعم</button>
    <button class="btn neutral" id="cancelModal">إلغاء</button>
+  </div>
+ </div>
+</div>
+
+<!-- Modal إدخال كلمة المرور لحذف السجل (مخفية الحروف) -->
+<div id="passwordModalBg" class="modal-bg hidden">
+ <div class="modal" style="max-width:380px;">
+  <h3>تأكيد حذف السجل</h3>
+  <div class="field">
+   <label>يرجى إدخال كلمة المرور</label>
+   <input type="password" id="deletePasswordInput" placeholder="أدخل كلمة المرور" autocomplete="current-password">
+  </div>
+  <div class="modal-actions">
+   <button class="btn danger" id="confirmDeleteVisitBtn">حذف</button>
+   <button class="btn neutral" id="cancelDeleteVisitBtn">إلغاء</button>
   </div>
  </div>
 </div>
@@ -258,7 +274,7 @@ const firebaseConfig = {
   storageBucket: "n-inv-visit.firebasestorage.app",
   messagingSenderId: "491302532888",
   appId: "1:491302532888:web:4c89e95d19c042a7da506d",
-  databaseURL: "https://n-inv-visit-default-rtdb.firebaseio.com"
+  databaseURL: "https://n-inv-visit-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -340,7 +356,7 @@ const initialRestaurants=[
 
 const KEY="naifRestaurantVisits_v2";
 window.db_app = {restaurants: initialRestaurants, visits: []};
-let reportResults=[],editingOldName=null,soundEnabled=false,audioContext=null,isSyncingFromFirebase=false;
+let reportResults=[],editingOldName=null,soundEnabled=false,audioContext=null,isSyncingFromFirebase=false,pendingDeleteId=null;
 
 function loadLocalDB(){
  try{
@@ -381,10 +397,12 @@ onValue(ref(db_fb, 'naifVisitsData'), (snapshot) => {
   isSyncingFromFirebase = false;
   const ind = document.getElementById("syncStatusIndicator");
   if(ind) ind.textContent = "● متصل ومزامن مع Firebase";
+ } else if(!data) {
+  saveDB(); // الحفظ لأول مرة في السحابة إذا كانت قاعدة البيانات فارغة
  }
 }, (error) => {
  const ind = document.getElementById("syncStatusIndicator");
- if(ind) ind.textContent = "● وضع غير متصل (محلي)";
+ if(ind) ind.textContent = "● غير متصل (محلي)";
 });
 
 function $(id){return document.getElementById(id)}
@@ -462,16 +480,30 @@ function visitRestaurant(name){
  renderAll();
 }
 
-function deleteVisitRecord(id){
- const pass = prompt("يرجى إدخال كلمة المرور لحذف سجل الزيارة:");
- if(pass === null) return;
+function openPasswordModal(id){
+ pendingDeleteId = id;
+ $("deletePasswordInput").value = "";
+ $("passwordModalBg").classList.remove("hidden");
+ $("deletePasswordInput").focus();
+}
+
+function closePasswordModal(){
+ pendingDeleteId = null;
+ $("deletePasswordInput").value = "";
+ $("passwordModalBg").classList.add("hidden");
+}
+
+function confirmDeleteVisit(){
+ const pass = $("deletePasswordInput").value;
  if(pass === "123321"){
-  window.db_app.visits = window.db_app.visits.filter(v => v.id !== id);
+  window.db_app.visits = window.db_app.visits.filter(v => v.id !== pendingDeleteId);
   saveDB();
   renderAll();
+  closePasswordModal();
   toast("تم حذف سجل الزيارة بنجاح");
  } else {
   alert("كلمة المرور غير صحيحة!");
+  $("deletePasswordInput").focus();
  }
 }
 
@@ -763,7 +795,7 @@ document.addEventListener("click",e=>{
  const restaurant=e.target.closest("[data-restaurant]");
  if(restaurant){visitRestaurant(restaurant.dataset.restaurant);return}
  const delVisit=e.target.closest("[data-deletevisit]");
- if(delVisit){deleteVisitRecord(delVisit.dataset.deletevisit);return}
+ if(delVisit){openPasswordModal(delVisit.dataset.deletevisit);return}
  const edit=e.target.closest("[data-edit]");
  if(edit){openModal(edit.dataset.edit);return}
  const del=e.target.closest("[data-delete]");
@@ -773,6 +805,7 @@ document.addEventListener("click",e=>{
  const go=e.target.closest("[data-goto]");
  if(go){showPage(go.dataset.goto);return}
 });
+
 $("visitorName").value=localStorage.getItem("naifLastVisitor")||"";
 $("visitorName").addEventListener("change",()=>localStorage.setItem("naifLastVisitor",visitorName()));
 $("visitorName").addEventListener("blur",()=>{if(visitorName())localStorage.setItem("naifLastVisitor",visitorName())});
@@ -792,6 +825,15 @@ $("saveRestaurant").addEventListener("click",saveRestaurant);
 $("deleteRestaurant").addEventListener("click",deleteRestaurant);
 $("cancelModal").addEventListener("click",closeModal);
 $("modalBg").addEventListener("click",e=>{if(e.target===$("modalBg"))closeModal()});
+
+$("confirmDeleteVisitBtn").addEventListener("click", confirmDeleteVisit);
+$("cancelDeleteVisitBtn").addEventListener("click", closePasswordModal);
+$("passwordModalBg").addEventListener("click", e => { if(e.target === $("passwordModalBg")) closePasswordModal(); });
+$("deletePasswordInput").addEventListener("keydown", e => {
+ if(e.key === "Enter") confirmDeleteVisit();
+ if(e.key === "Escape") closePasswordModal();
+});
+
 $("excelVisits").addEventListener("click",()=>exportExcel(filteredVisits()));
 $("excelReport").addEventListener("click",()=>exportExcel(reportResults));
 $("printVisits").addEventListener("click",()=>exportPDF("سجل زيارات المطاعم",filteredVisits()));
