@@ -7,6 +7,7 @@
 <title>نظام زيارات المطاعم - شركة نايف للأغذية</title>
 <link rel="icon" href="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root{--red:#c62828;--red2:#a71919;--blue:#eaf4ff;--white:#fff;--ink:#263747;--muted:#65798b;--line:#d8e5f0;--green:#18834b;--orange:#f4a321;--shadow:0 5px 20px #24415a12}
 *{box-sizing:border-box}
@@ -39,8 +40,9 @@ header{background:var(--red);color:white;padding:12px 18px;position:sticky;top:0
 .field label{font-weight:bold;font-size:12px;color:#536a7c}
 input,select{width:100%;height:43px;padding:0 11px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);outline:none}
 input:focus,select:focus{border-color:#5797d0;box-shadow:0 0 0 3px #5797d01c}
-#visitorName{height:58px;font-size:28px;font-weight:bold}
+#visitorName,#restaurantSearch{height:58px;font-size:28px;font-weight:bold}
 .btn{border:0;border-radius:10px;padding:11px 15px;min-height:42px;font-weight:bold}
+.btn-sm{min-height:30px;padding:4px 10px;font-size:11px;border-radius:6px}
 .primary{background:var(--red);color:white}.primary:hover{background:var(--red2)}
 .soft{background:#eaf3fc;color:#285b85;border:1px solid #d6e7f6}
 .neutral{background:#f1f4f6;color:#455b6c;border:1px solid var(--line)}
@@ -49,12 +51,10 @@ input:focus,select:focus{border-color:#5797d0;box-shadow:0 0 0 3px #5797d01c}
 .restaurant-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
 .restaurant-card{min-height:105px;border-radius:13px;padding:13px;text-align:right;border:1px solid #d5e5f2;background:#f1f7fd;display:flex;flex-direction:column;justify-content:space-between;gap:8px;color:var(--ink);transition:.15s}
 .restaurant-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px #1b46601b}
-.restaurant-card.open{background:#fff3dc;border:2px solid #e4a13b}
 .rname{font-size:15px;font-weight:bold;line-height:1.5}
 .meta{display:flex;justify-content:space-between;gap:5px;font-size:11px;color:#617789;flex-wrap:wrap}
-.open .meta span:first-child{color:#a2630c;font-weight:bold}
 .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:11px}
-table{width:100%;border-collapse:collapse;min-width:760px}
+table{width:100%;border-collapse:collapse;min-width:850px}
 th,td{padding:11px;text-align:right;border-bottom:1px solid #eaf0f5;white-space:nowrap}
 th{background:#f1f6fa;color:#53697b;font-size:12px}
 td{font-size:13px}
@@ -90,12 +90,7 @@ tbody tr:last-child td{border-bottom:0}
  .restaurant-card{min-height:105px;padding:10px}.rname{font-size:14px}
  .field{min-width:calc(50% - 8px)}.stats{gap:7px}.stat{padding:11px}.stat strong{font-size:23px}
  .report-grid{grid-template-columns:repeat(2,1fr)}.summary{gap:6px}.mini{padding:9px}.mini strong{font-size:18px}
- #visitorName{font-size:25px}
-}
-@media print{
- header,.nav,.no-print,.signature-card,.toolbar,.restaurant-grid{display:none!important}
- body{background:white}.wrap{margin:0;padding:0}.panel{box-shadow:none;border:0;padding:0}
- table{min-width:0}th,td{font-size:9px;padding:6px}
+ #visitorName,#restaurantSearch{font-size:24px;height:52px}
 }
 </style>
 </head>
@@ -116,7 +111,7 @@ tbody tr:last-child td{border-bottom:0}
   <button data-page="visits">سجل الزيارات</button>
   <button data-page="reports">التقارير</button>
   <button data-page="manage">إدارة المطاعم</button>
-  <button data-page="backup">النسخ الاحتياطي</button>
+  <button data-page="backup">النسخ الاحتياطي والمزامنة</button>
  </nav>
 
  <section id="dashboard" class="page">
@@ -129,8 +124,8 @@ tbody tr:last-child td{border-bottom:0}
 
   <div class="panel">
    <div class="panel-title">
-    <div><h2>تسجيل زيارة مطعم</h2><div class="sub">الضغطة الأولى لتسجيل الدخول والثانية لتسجيل الخروج</div></div>
-    <span class="status open">الزيارة المفتوحة باللون البرتقالي</span>
+    <div><h2>تسجيل زيارة مطعم</h2><div class="sub">الضغطة الأولى لتسجيل الدخول والثانية لتسجيل الخروج (مزامنة فورية عبر Firebase)</div></div>
+    <span class="status open" id="syncStatusIndicator">● متصل بـ Firebase</span>
    </div>
    <div class="toolbar">
     <div class="field">
@@ -156,17 +151,16 @@ tbody tr:last-child td{border-bottom:0}
 
  <section id="visits" class="page hidden">
   <div class="panel">
-   <div class="panel-title"><h2>سجل الزيارات</h2><button class="btn success" id="excelVisits">تصدير Excel</button></div>
+   <div class="panel-title"><h2>سجل الزيارات</h2><div style="display:flex;gap:8px;"><button class="btn success" id="excelVisits">تصدير Excel</button><button class="btn soft" id="printVisits">تصدير PDF</button></div></div>
    <div class="toolbar">
     <div class="field"><label>بحث</label><input id="visitSearch" class="smart" data-source="visitSearch" placeholder="مطعم أو اسم منفّذ الزيارة"></div>
     <div class="field"><label>من تاريخ</label><input type="date" id="visitFrom"></div>
     <div class="field"><label>إلى تاريخ</label><input type="date" id="visitTo"></div>
     <button class="btn primary" id="searchVisits">بحث</button>
     <button class="btn neutral" id="clearVisits">مسح</button>
-    <button class="btn soft" id="printVisits">PDF / طباعة</button>
    </div>
    <div class="table-wrap"><table>
-    <thead><tr><th>#</th><th>المطعم</th><th>مدير المنطقة</th><th>مدير التشغيل</th><th>منفّذ الزيارة</th><th>تاريخ الدخول</th><th>وقت الدخول</th><th>تاريخ الخروج</th><th>وقت الخروج</th><th>المدة</th><th>الحالة</th></tr></thead>
+    <thead><tr><th>#</th><th>المطعم</th><th>مدير المنطقة</th><th>مدير التشغيل</th><th>منفّذ الزيارة</th><th>تاريخ الدخول</th><th>وقت الدخول</th><th>تاريخ الخروج</th><th>وقت الخروج</th><th>المدة</th><th>الحالة</th><th>حذف</th></tr></thead>
     <tbody id="visitRows"></tbody>
    </table></div>
    <div class="sub" id="visitCount"></div>
@@ -196,7 +190,7 @@ tbody tr:last-child td{border-bottom:0}
     <div class="mini"><span>زيارات مفتوحة</span><strong id="repOpen">0</strong></div>
    </div>
    <div class="table-wrap"><table>
-    <thead><tr><th>#</th><th>المطعم</th><th>مدير المنطقة</th><th>مدير التشغيل</th><th>منفّذ الزيارة</th><th>تاريخ الدخول</th><th>وقت الدخول</th><th>تاريخ الخروج</th><th>وقت الخروج</th><th>المدة</th><th>الحالة</th></tr></thead>
+    <thead><tr><th>#</th><th>المطعم</th><th>مدير المنطقة</th><th>مدير التشغيل</th><th>منفّذ الزيارة</th><th>تاريخ الدخول</th><th>وقت الدخول</th><th>تاريخ الخروج</th><th>وقت الخروج</th><th>المدة</th><th>الحالة</th><th>حذف</th></tr></thead>
     <tbody id="reportRows"></tbody>
    </table></div>
   </div>
@@ -215,20 +209,19 @@ tbody tr:last-child td{border-bottom:0}
 
  <section id="backup" class="page hidden">
   <div class="panel">
-   <h2>النسخ الاحتياطي</h2>
-   <p>يتم حفظ البيانات تلقائيًا في المتصفح على هذا الجهاز. احتفظ بنسخة احتياطية دورية.</p>
+   <h2>النسخ الاحتياطي والمزامنة السحابية (Firebase)</h2>
+   <p>البيانات مرتبطة سحابياً بشكل كامل عبر Firebase ومحفوظة محلياً لضمان العمل السلس. يمكنك أيضاً حفظ نسخة احتياطية محلية بصيغة JSON أو استيرادها في أي وقت.</p>
    <div class="toolbar">
-    <button class="btn primary" id="backupButton">تنزيل نسخة احتياطية</button>
+    <button class="btn primary" id="backupButton">تنزيل نسخة احتياطية JSON</button>
     <label class="btn soft" for="restoreFile">استيراد نسخة احتياطية</label>
     <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
    </div>
-   <p class="sub">البيانات المحلية لا تتم مزامنتها تلقائيًا بين الأجهزة. يلزم ربط Firebase إذا أردت استخدام النظام من عدة أجهزة ومستخدمين.</p>
-   <hr>
+   <hr style="margin:20px 0; border:0; border-top:1px solid var(--line);">
    <div class="toolbar">
     <button class="btn soft" id="soundButton">تفعيل التنبيه الصوتي</button>
     <span class="sub" id="soundStatus">التنبيه الصوتي غير مفعل</span>
    </div>
-   <p class="sub">يصدر تنبيه عند استمرار الزيارة مفتوحة لمدة ساعة. يجب إبقاء صفحة البرنامج مفتوحة، وقد يؤخر المتصفح التنبيه إذا كانت الصفحة في الخلفية.</p>
+   <p class="sub">يصدر تنبيه عند استمرار الزيارة مفتوحة لمدة ساعة. يجب إبقاء صفحة البرنامج مفتوحة.</p>
   </div>
  </section>
 </div>
@@ -253,7 +246,24 @@ tbody tr:last-child td{border-bottom:0}
  <div class="name">Yasser Elkhateeb</div><div>مطور البرنامج 67011143</div>
 </a>
 
-<script>
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAePuBl9bJsBqBLTQbw5zMR9CX32oGUpnE",
+  authDomain: "n-inv-visit.firebaseapp.com",
+  projectId: "n-inv-visit",
+  storageBucket: "n-inv-visit.firebasestorage.app",
+  messagingSenderId: "491302532888",
+  appId: "1:491302532888:web:4c89e95d19c042a7da506d",
+  databaseURL: "https://n-inv-visit-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const db_fb = getDatabase(app);
+
 const initialRestaurants=[
 {"name":"مول 360","area":"وليد صبري","ops":"طارق بيومي"},
 {"name":"جمعية أبو فطيرة","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
@@ -329,41 +339,108 @@ const initialRestaurants=[
 ];
 
 const KEY="naifRestaurantVisits_v2";
-let db=loadDB(),reportResults=[],editingOldName=null,soundEnabled=false,audioContext=null;
+window.db_app = {restaurants: initialRestaurants, visits: []};
+let reportResults=[],editingOldName=null,soundEnabled=false,audioContext=null,isSyncingFromFirebase=false;
 
-function loadDB(){
+function loadLocalDB(){
  try{
   const d=JSON.parse(localStorage.getItem(KEY));
   if(d&&Array.isArray(d.restaurants)&&Array.isArray(d.visits))return d;
  }catch(e){}
- // ترحيل بيانات النسخة السابقة إن وجدت
  try{
   const old=JSON.parse(localStorage.getItem("naifRestaurantVisits_v1"));
   if(old&&Array.isArray(old.restaurants)&&Array.isArray(old.visits))return old;
  }catch(e){}
  return {restaurants:initialRestaurants,visits:[]};
 }
-function saveDB(){localStorage.setItem(KEY,JSON.stringify(db))}
+
+window.db_app = loadLocalDB();
+
+function saveDB(){
+ localStorage.setItem(KEY,JSON.stringify(window.db_app));
+ if(!isSyncingFromFirebase){
+  set(ref(db_fb, 'naifVisitsData'), window.db_app)
+   .then(()=>{
+    const ind = document.getElementById("syncStatusIndicator");
+    if(ind) ind.textContent = "● متصل ومزامن مع Firebase";
+   })
+   .catch(err=>{
+    const ind = document.getElementById("syncStatusIndicator");
+    if(ind) ind.textContent = "● خطأ في المزامنة السحابية";
+   });
+ }
+}
+
+onValue(ref(db_fb, 'naifVisitsData'), (snapshot) => {
+ const data = snapshot.val();
+ if(data && Array.isArray(data.restaurants) && Array.isArray(data.visits)){
+  isSyncingFromFirebase = true;
+  window.db_app = data;
+  localStorage.setItem(KEY, JSON.stringify(data));
+  renderAll();
+  isSyncingFromFirebase = false;
+  const ind = document.getElementById("syncStatusIndicator");
+  if(ind) ind.textContent = "● متصل ومزامن مع Firebase";
+ }
+}, (error) => {
+ const ind = document.getElementById("syncStatusIndicator");
+ if(ind) ind.textContent = "● وضع غير متصل (محلي)";
+});
+
 function $(id){return document.getElementById(id)}
 function pad(n){return String(n).padStart(2,"0")}
 function dateString(d=new Date()){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
-function timeString(d=new Date()){return pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds())}
+
+function timeString(d=new Date()){
+ let h=d.getHours(), m=d.getMinutes();
+ let ampm = h >= 12 ? 'مساءً' : 'صباحاً';
+ h = h % 12; h = h ? h : 12;
+ return h + ":" + pad(m) + " " + ampm;
+}
+
+function fmtTime(t){
+ if(!t)return "—";
+ if(t.includes("صباحاً") || t.includes("مساءً"))return t;
+ let p=t.split(":");
+ if(p.length>=2){
+  let h=parseInt(p[0],10), m=p[1];
+  if(!isNaN(h)){
+   let ampm = h >= 12 ? 'مساءً' : 'صباحاً';
+   h = h % 12; h = h ? h : 12;
+   return h + ":" + m + " " + ampm;
+  }
+ }
+ return t;
+}
+
 function fmtDate(s){if(!s)return "—";let a=s.split("-");return a[2]+"/"+a[1]+"/"+a[0]}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function toast(s){let t=$("toast");t.textContent=s;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2600)}
 function visitorName(){return $("visitorName").value.trim()}
-function activeVisit(name){return db.visits.find(v=>v.restaurant===name&&!v.exitAt)}
+function activeVisit(name){return window.db_app.visits.find(v=>v.restaurant===name&&!v.exitAt)}
+
+function currentMonthVisits(name){
+ const curYM = dateString().slice(0,7);
+ return window.db_app.visits.filter(v => v.restaurant === name && v.entryDate && v.entryDate.startsWith(curYM)).length;
+}
+
 function duration(v){
  if(!v.entryAt)return "—";
  let ms=(v.exitAt?new Date(v.exitAt):new Date())-new Date(v.entryAt);
  let mins=Math.max(0,Math.floor(ms/60000));
  return Math.floor(mins/60)+" ساعة "+(mins%60)+" دقيقة";
 }
+
 function setDefaultDates(){
  const d=new Date();
  const first=d.getFullYear()+"-"+pad(d.getMonth()+1)+"-01";
- $("repFrom").value=first;$("repTo").value=dateString(d);
+ const today=dateString(d);
+ if($("repFrom")) $("repFrom").value=first;
+ if($("repTo")) $("repTo").value=today;
+ if($("visitFrom")) $("visitFrom").value=first;
+ if($("visitTo")) $("visitTo").value=today;
 }
+
 function visitRestaurant(name){
  const who=visitorName();
  if(!who){$("visitorName").focus();toast("يرجى كتابة اسم منفّذ الزيارة أولاً");return}
@@ -373,8 +450,8 @@ function visitRestaurant(name){
   open.exitAt=now.toISOString();open.exitDate=dateString(now);open.exitTime=timeString(now);
   saveDB();toast("تم تسجيل الخروج من "+name);
  }else{
-  const r=db.restaurants.find(x=>x.name===name);
-  db.visits.unshift({
+  const r=window.db_app.restaurants.find(x=>x.name===name);
+  window.db_app.visits.unshift({
    id:Date.now()+"_"+Math.random().toString(16).slice(2),
    restaurant:name,area:r?.area||"",ops:r?.ops||"",visitor:who,
    entryAt:now.toISOString(),entryDate:dateString(now),entryTime:timeString(now),
@@ -384,41 +461,78 @@ function visitRestaurant(name){
  }
  renderAll();
 }
+
+function deleteVisitRecord(id){
+ const pass = prompt("يرجى إدخال كلمة المرور لحذف سجل الزيارة:");
+ if(pass === null) return;
+ if(pass === "123321"){
+  window.db_app.visits = window.db_app.visits.filter(v => v.id !== id);
+  saveDB();
+  renderAll();
+  toast("تم حذف سجل الزيارة بنجاح");
+ } else {
+  alert("كلمة المرور غير صحيحة!");
+ }
+}
+
 function renderRestaurants(){
  const q=$("restaurantSearch").value.trim().toLowerCase();
  const colors=["#edf6ff","#f0f6ff","#edf8f5","#f5f1ff","#fff6e9","#eef7f8"];
- const items=db.restaurants.filter(r=>r.name.toLowerCase().includes(q));
+ let items=window.db_app.restaurants.filter(r=>r.name.toLowerCase().includes(q));
+ 
+ items.sort((a,b)=>{
+  const aAct = activeVisit(a.name) ? 1 : 0;
+  const bAct = activeVisit(b.name) ? 1 : 0;
+  return bAct - aAct;
+ });
+
  $("restaurantGrid").innerHTML=items.map((r,i)=>{
   const op=activeVisit(r.name);
-  return `<button type="button" class="restaurant-card ${op?"open":""}" data-restaurant="${esc(r.name)}" style="background:${op?"#fff3dc":colors[i%colors.length]}">
-   <span class="rname">${esc(r.name)}</span>
-   <span class="meta"><span>${op?"● زيارة مفتوحة - اضغط للخروج":"اضغط لتسجيل الدخول"}</span><span>${esc(r.ops||"")}</span></span>
+  const count=currentMonthVisits(r.name);
+  
+  const cardStyle = op ? 
+   "background:#1e293b; color:#ffffff; border:3px solid #f59e0b; box-shadow: 0 8px 25px rgba(245,158,11,0.4);" : 
+   `background:${colors[i%colors.length]};`;
+
+  return `<button type="button" class="restaurant-card ${op?"open":""}" data-restaurant="${esc(r.name)}" style="${cardStyle}">
+   <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%; gap:8px;">
+    <span class="rname" style="${op?'font-size:17px; color:#fde047;':''}">${esc(r.name)}</span>
+    <div style="text-align:center; background:${op?'#f59e0b':'rgba(0,0,0,0.06)'}; color:${op?'#1e293b':'var(--red)'}; padding:3px 9px; border-radius:8px; min-width:44px;">
+     <div style="font-size:10px; line-height:1; opacity:0.8;">زيارات الشهر</div>
+     <div style="font-size:22px; font-weight:bold; line-height:1.2;">${count}</div>
+    </div>
+   </div>
+   <span class="meta" style="${op?'color:#cbd5e1;':''}"><span>${op?"● زيارة مفتوحة - اضغط للخروج":"اضغط لتسجيل الدخول"}</span><span>${esc(r.ops||"")}</span></span>
   </button>`;
  }).join("")||'<div class="empty">لا توجد نتائج</div>';
 }
+
 function visitRow(v,i){
  return `<tr><td>${i+1}</td><td>${esc(v.restaurant)}</td><td>${esc(v.area)}</td><td>${esc(v.ops)}</td><td>${esc(v.visitor)}</td>
- <td class="ltr">${fmtDate(v.entryDate)}</td><td class="ltr">${v.entryTime||"—"}</td>
- <td class="ltr">${fmtDate(v.exitDate)}</td><td class="ltr">${v.exitTime||"—"}</td><td>${duration(v)}
- </td><td><span class="status ${v.exitAt?"done":"open"}">${v.exitAt?"مكتملة":"مفتوحة"}</span></td></tr>`;
+ <td class="ltr">${fmtDate(v.entryDate)}</td><td class="ltr">${fmtTime(v.entryTime)}</td>
+ <td class="ltr">${fmtDate(v.exitDate)}</td><td class="ltr">${fmtTime(v.exitTime)}</td><td>${duration(v)}
+ </td><td><span class="status ${v.exitAt?"done":"open"}">${v.exitAt?"مكتملة":"مفتوحة"}</span></td>
+ <td><button class="btn danger btn-sm" data-deletevisit="${esc(v.id)}">حذف</button></td></tr>`;
 }
+
 function renderRecent(){
- $("recentRows").innerHTML=db.visits.slice(0,7).map((v,i)=>`<tr><td>${esc(v.restaurant)}</td><td>${esc(v.visitor)}</td><td>${fmtDate(v.entryDate)}</td><td class="ltr">${v.entryTime}</td><td class="ltr">${v.exitTime||"—"}</td><td><span class="status ${v.exitAt?"done":"open"}">${v.exitAt?"مكتملة":"مفتوحة"}</span></td></tr>`).join("")||'<tr><td colspan="6" class="empty">لا توجد زيارات بعد</td></tr>';
+ $("recentRows").innerHTML=window.db_app.visits.slice(0,7).map((v,i)=>`<tr><td>${esc(v.restaurant)}</td><td>${esc(v.visitor)}</td><td>${fmtDate(v.entryDate)}</td><td class="ltr">${fmtTime(v.entryTime)}</td><td class="ltr">${fmtTime(v.exitTime)}</td><td><span class="status ${v.exitAt?"done":"open"}">${v.exitAt?"مكتملة":"مفتوحة"}</span></td></tr>`).join("")||'<tr><td colspan="6" class="empty">لا توجد زيارات بعد</td></tr>';
 }
+
 function filteredVisits(){
  const q=($("visitSearch").value||"").trim().toLowerCase(),from=$("visitFrom").value,to=$("visitTo").value;
- return db.visits.filter(v=>(!q||[v.restaurant,v.visitor,v.area,v.ops].some(x=>(x||"").toLowerCase().includes(q)))&&(!from||v.entryDate>=from)&&(!to||v.entryDate<=to));
+ return window.db_app.visits.filter(v=>(!q||[v.restaurant,v.visitor,v.area,v.ops].some(x=>(x||"").toLowerCase().includes(q)))&&(!from||v.entryDate>=from)&&(!to||v.entryDate<=to));
 }
 function renderVisits(){
  const arr=filteredVisits();
- $("visitRows").innerHTML=arr.map(visitRow).join("")||'<tr><td colspan="11" class="empty">لا توجد زيارات مطابقة</td></tr>';
+ $("visitRows").innerHTML=arr.map(visitRow).join("")||'<tr><td colspan="12" class="empty">لا توجد زيارات مطابقة</td></tr>';
  $("visitCount").textContent="عدد السجلات: "+arr.length;
 }
 function buildReport(){
  const from=$("repFrom").value,to=$("repTo").value;
  const area=$("repArea").value.trim(),ops=$("repOps").value.trim();
  const rest=$("repRestaurant").value.trim(),vis=$("repVisitor").value.trim();
- reportResults=db.visits.filter(v=>
+ reportResults=window.db_app.visits.filter(v=>
   (!from||v.entryDate>=from)&&(!to||v.entryDate<=to)&&
   (!area||v.area===area)&&(!ops||v.ops===ops)&&
   (!rest||v.restaurant===rest)&&(!vis||v.visitor===vis)
@@ -426,7 +540,7 @@ function buildReport(){
  $("repTotal").textContent=reportResults.length;
  $("repDone").textContent=reportResults.filter(v=>v.exitAt).length;
  $("repOpen").textContent=reportResults.filter(v=>!v.exitAt).length;
- $("reportRows").innerHTML=reportResults.map(visitRow).join("")||'<tr><td colspan="11" class="empty">لا توجد نتائج مطابقة</td></tr>';
+ $("reportRows").innerHTML=reportResults.map(visitRow).join("")||'<tr><td colspan="12" class="empty">لا توجد نتائج مطابقة</td></tr>';
 }
 function resetReport(){
  ["repArea","repOps","repRestaurant","repVisitor"].forEach(id=>$(id).value="");
@@ -434,17 +548,17 @@ function resetReport(){
 }
 function renderManage(){
  const q=$("manageSearch").value.trim().toLowerCase();
- const arr=db.restaurants.filter(r=>r.name.toLowerCase().includes(q));
+ const arr=window.db_app.restaurants.filter(r=>r.name.toLowerCase().includes(q));
  $("manageRows").innerHTML=arr.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.name)}</td><td>${esc(r.area)}</td><td>${esc(r.ops)}</td>
  <td><button class="btn soft" data-edit="${esc(r.name)}">تعديل</button>
  <button class="btn danger" data-delete="${esc(r.name)}">حذف</button></td></tr>`).join("")||'<tr><td colspan="5" class="empty">لا توجد مطاعم</td></tr>';
 }
 function renderStats(){
  const today=dateString();
- $("statRestaurants").textContent=db.restaurants.length;
- $("statToday").textContent=db.visits.filter(v=>v.entryDate===today).length;
- $("statOpen").textContent=db.visits.filter(v=>!v.exitAt).length;
- $("statAll").textContent=db.visits.length;
+ $("statRestaurants").textContent=window.db_app.restaurants.length;
+ $("statToday").textContent=window.db_app.visits.filter(v=>v.entryDate===today).length;
+ $("statOpen").textContent=window.db_app.visits.filter(v=>!v.exitAt).length;
+ $("statAll").textContent=window.db_app.visits.length;
 }
 function renderAll(){
  renderStats();renderRestaurants();renderRecent();renderVisits();renderManage();buildReport();
@@ -461,7 +575,7 @@ function showPage(id){
 function openModal(name=null){
  editingOldName=name;
  $("modalTitle").textContent=name?"تعديل بيانات المطعم":"إضافة مطعم جديد";
- const r=name?db.restaurants.find(x=>x.name===name):{name:"",area:"",ops:""};
+ const r=name?window.db_app.restaurants.find(x=>x.name===name):{name:"",area:"",ops:""};
  $("editName").value=r?.name||"";$("editArea").value=r?.area||"";$("editOps").value=r?.ops||"";
  $("deleteRestaurant").classList.toggle("hidden",!name);
  $("modalBg").classList.remove("hidden");
@@ -470,15 +584,15 @@ function closeModal(){$("modalBg").classList.add("hidden")}
 function saveRestaurant(){
  const name=$("editName").value.trim(),area=$("editArea").value.trim(),ops=$("editOps").value.trim();
  if(!name){toast("يرجى كتابة اسم المطعم");return}
- if(db.restaurants.some(r=>r.name.toLowerCase()===name.toLowerCase()&&r.name!==editingOldName)){toast("اسم المطعم موجود بالفعل");return}
+ if(window.db_app.restaurants.some(r=>r.name.toLowerCase()===name.toLowerCase()&&r.name!==editingOldName)){toast("اسم المطعم موجود بالفعل");return}
  if(editingOldName){
-  const r=db.restaurants.find(x=>x.name===editingOldName);
+  const r=window.db_app.restaurants.find(x=>x.name===editingOldName);
   if(!r)return;
   r.name=name;r.area=area;r.ops=ops;
-  db.visits.forEach(v=>{if(v.restaurant===editingOldName){v.restaurant=name;v.area=area;v.ops=ops}});
+  window.db_app.visits.forEach(v=>{if(v.restaurant===editingOldName){v.restaurant=name;v.area=area;v.ops=ops}});
   toast("تم تعديل بيانات المطعم");
  }else{
-  db.restaurants.push({name,area,ops});toast("تمت إضافة المطعم");
+  window.db_app.restaurants.push({name,area,ops});toast("تمت إضافة المطعم");
  }
  saveDB();closeModal();renderAll();
 }
@@ -487,15 +601,15 @@ function deleteRestaurant(){
  const name=editingOldName;
  if(!confirm("هل تريد حذف المطعم "+name+" من قائمة المطاعم؟ ستبقى الزيارات السابقة محفوظة في السجل."))return;
  if(activeVisit(name)){toast("لا يمكن حذف مطعم لديه زيارة مفتوحة");return}
- db.restaurants=db.restaurants.filter(r=>r.name!==name);
+ window.db_app.restaurants=window.db_app.restaurants.filter(r=>r.name!==name);
  saveDB();closeModal();renderAll();toast("تم حذف المطعم");
 }
 function exportExcel(arr){
  if(typeof XLSX==="undefined"){alert("تعذر تحميل مكتبة Excel. تأكد من الاتصال بالإنترنت ثم أعد المحاولة.");return}
  const rows=arr.map((v,i)=>({
   "#":i+1,"المطعم":v.restaurant,"مدير المنطقة":v.area,"مدير التشغيل":v.ops,
-  "منفذ الزيارة":v.visitor,"تاريخ الدخول":v.entryDate,"وقت الدخول":v.entryTime,
-  "تاريخ الخروج":v.exitDate||"","وقت الخروج":v.exitTime||"",
+  "منفذ الزيارة":v.visitor,"تاريخ الدخول":v.entryDate,"وقت الدخول":fmtTime(v.entryTime),
+  "تاريخ الخروج":v.exitDate||"","وقت الخروج":fmtTime(v.exitTime),
   "المدة":duration(v),"الحالة":v.exitAt?"مكتملة":"مفتوحة"
  }));
  const ws=XLSX.utils.json_to_sheet(rows);
@@ -503,20 +617,61 @@ function exportExcel(arr){
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Visits");
  XLSX.writeFile(wb,"Naif_Restaurant_Visits.xlsx");
 }
-function printTable(title,arr){
- const rows=arr.map((v,i)=>`<tr><td>${i+1}</td><td>${esc(v.restaurant)}</td><td>${esc(v.area)}</td><td>${esc(v.ops)}</td><td>${esc(v.visitor)}</td><td>${fmtDate(v.entryDate)} ${v.entryTime||""}</td><td>${fmtDate(v.exitDate)} ${v.exitTime||""}</td><td>${duration(v)}</td><td>${v.exitAt?"مكتملة":"مفتوحة"}</td></tr>`).join("");
- const w=window.open("","_blank");
- if(!w){alert("يرجى السماح بالنوافذ المنبثقة حتى يتم إنشاء التقرير");return}
- w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title}</title>
- <style>body{font-family:Tahoma,Arial;margin:25px;color:#222}header{display:flex;align-items:center;gap:15px;border-bottom:3px solid #c62828;padding-bottom:12px}header img{width:75px;height:65px;object-fit:contain}h2{text-align:center;margin:22px 0}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #aaa;padding:7px;text-align:right}th{background:#eaf2f8}footer{margin-top:20px;font-size:11px}@media print{@page{size:A4 landscape;margin:10mm}}</style>
- </head><body><header><img src="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg"><div><b>شركة نايف للأغذية</b><div>نظام تسجيل زيارات المطاعم</div></div></header>
- <h2>${title}</h2><p>الفترة: ${$("repFrom").value?fmtDate($("repFrom").value):"—"} إلى ${$("repTo").value?fmtDate($("repTo").value):"—"}</p>
- <table><thead><tr><th>#</th><th>المطعم</th><th>مدير المنطقة</th><th>مدير التشغيل</th><th>منفذ الزيارة</th><th>الدخول</th><th>الخروج</th><th>المدة</th><th>الحالة</th></tr></thead><tbody>${rows}</tbody></table>
- <footer>شركة نايف للأغذية - تقرير زيارات المطاعم</footer><script>window.onload=()=>setTimeout(()=>window.print(),500)<\/script></body></html>`);
- w.document.close();
+
+function exportPDF(title, arr){
+ const rows=arr.map((v,i)=>`<tr><td>${i+1}</td><td>${esc(v.restaurant)}</td><td>${esc(v.area)}</td><td>${esc(v.ops)}</td><td>${esc(v.visitor)}</td><td>${fmtDate(v.entryDate)} ${fmtTime(v.entryTime)}</td><td>${fmtDate(v.exitDate)} ${fmtTime(v.exitTime)}</td><td>${duration(v)}</td><td>${v.exitAt?"مكتملة":"مفتوحة"}</td></tr>`).join("");
+ 
+ const container = document.createElement("div");
+ container.dir = "rtl";
+ container.style.fontFamily = "Tahoma, Arial, sans-serif";
+ container.style.padding = "15px";
+ container.style.background = "#fff";
+ container.style.color = "#222";
+ container.innerHTML = `
+  <div style="display:flex; align-items:center; gap:12px; border-bottom:3px solid #c62828; padding-bottom:10px; margin-bottom:12px;">
+   <img src="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" style="width:50px; height:50px; object-fit:contain;">
+   <div>
+    <h3 style="margin:0; font-size:15px; color:#c62828;">شركة نايف للأغذية</h3>
+    <div style="font-size:11px; color:#555;">نظام تسجيل زيارات المطاعم</div>
+   </div>
+  </div>
+  <h2 style="text-align:center; margin:10px 0; font-size:16px;">${title}</h2>
+  <p style="font-size:10px; margin-bottom:8px;">الفترة: ${$("repFrom")&&$("repFrom").value?fmtDate($("repFrom").value):"—"} إلى ${$("repTo")&&$("repTo").value?fmtDate($("repTo").value):"—"}</p>
+  <table style="width:100%; border-collapse:collapse; font-size:8.5px;">
+   <thead>
+    <tr style="background:#eaf2f8; color:#333;">
+     <th style="border:1px solid #aaa; padding:5px; text-align:right;">#</th>
+     <th style="border:1px solid #aaa; padding:5px; text-align:right;">المطعم</th>
+     <th style="border:1px solid #aaa; padding:5px; text-align:right;">مدير المنطقة</th>
+     <th style="border:1px solid #aaa; padding:5px; text-align:right;">مدير التشغيل</th>
+     <th style="border:1px solid #aaa; padding:5px; text-align:right;">منفذ الزيارة</th>
+     <th style="border:1px solid #aaa; padding:5px; text-align:right;">الدخول</th>
+     <th style="border:1px solid #aaa; padding:5px; text-align:right;">الخروج</th>
+     <th style="border:1px solid #aaa; padding:5px; text-align:right;">المدة</th>
+     <th style="border:1px solid #aaa; padding:5px; text-align:right;">الحالة</th>
+    </tr>
+   </thead>
+   <tbody>
+    ${rows}
+   </tbody>
+  </table>
+  <div style="margin-top:15px; font-size:9px; text-align:center; color:#777;">شركة نايف للأغذية - تقرير زيارات المطاعم</div>
+ `;
+
+ const opt = {
+  margin:       8,
+  filename:     (title.includes("تقرير") ? "Naif_Report.pdf" : "Naif_Visits_Log.pdf"),
+  image:        { type: 'jpeg', quality: 0.98 },
+  html2canvas:  { scale: 2, useCORS: true },
+  jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+ };
+
+ toast("جاري تجهيز وتنزيل ملف PDF...");
+ html2pdf().from(container).set(opt).save();
 }
+
 function backupJSON(){
- const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+ const blob=new Blob([JSON.stringify(window.db_app,null,2)],{type:"application/json"});
  downloadBlob(blob,"Naif_Visits_Backup.json");
 }
 function downloadBlob(blob,name){
@@ -529,19 +684,22 @@ function restoreJSON(file){
   try{
    const x=JSON.parse(reader.result);
    if(!Array.isArray(x.restaurants)||!Array.isArray(x.visits))throw Error();
-   if(confirm("سيتم استبدال البيانات الحالية. هل تريد المتابعة؟")){
-    db=x;saveDB();renderAll();toast("تم استيراد النسخة الاحتياطية");
+   if(confirm("سيتم استبدال البيانات الحالية ومزامنتها مع سحابة Firebase. هل تريد المتابعة؟")){
+    window.db_app = x;
+    saveDB();
+    renderAll();
+    toast("تم استيراد النسخة الاحتياطية بنجاح");
    }
   }catch(e){alert("ملف النسخة الاحتياطية غير صالح")}
  };
  reader.readAsText(file);
 }
 function smartOptions(source){
- if(source==="restaurants")return db.restaurants.map(x=>x.name);
- if(source==="areas")return [...new Set(db.restaurants.map(x=>x.area).filter(Boolean))];
- if(source==="ops")return [...new Set(db.restaurants.map(x=>x.ops).filter(Boolean))];
- if(source==="visitors")return [...new Set(db.visits.map(x=>x.visitor).filter(Boolean))];
- if(source==="visitSearch")return [...new Set([...db.restaurants.map(x=>x.name),...db.visits.map(x=>x.visitor).filter(Boolean)])];
+ if(source==="restaurants")return window.db_app.restaurants.map(x=>x.name);
+ if(source==="areas")return [...new Set(window.db_app.restaurants.map(x=>x.area).filter(Boolean))];
+ if(source==="ops")return [...new Set(window.db_app.restaurants.map(x=>x.ops).filter(Boolean))];
+ if(source==="visitors")return [...new Set(window.db_app.visits.map(x=>x.visitor).filter(Boolean))];
+ if(source==="visitSearch")return [...new Set([...window.db_app.restaurants.map(x=>x.name),...window.db_app.visits.map(x=>x.visitor).filter(Boolean)])];
  return [];
 }
 function initSmartSearch(){
@@ -588,7 +746,7 @@ function playAlert(){
 function checkLongVisits(){
  if(!soundEnabled)return;
  const now=Date.now();let changed=false;
- db.visits.forEach(v=>{
+ window.db_app.visits.forEach(v=>{
   if(!v.exitAt&&!v.alerted&&v.entryAt&&now-new Date(v.entryAt).getTime()>=3600000){
    v.alerted=true;changed=true;playAlert();
    toast("تنبيه: الزيارة في "+v.restaurant+" تجاوزت ساعة دون تسجيل خروج");
@@ -604,6 +762,8 @@ function tick(){
 document.addEventListener("click",e=>{
  const restaurant=e.target.closest("[data-restaurant]");
  if(restaurant){visitRestaurant(restaurant.dataset.restaurant);return}
+ const delVisit=e.target.closest("[data-deletevisit]");
+ if(delVisit){deleteVisitRecord(delVisit.dataset.deletevisit);return}
  const edit=e.target.closest("[data-edit]");
  if(edit){openModal(edit.dataset.edit);return}
  const del=e.target.closest("[data-delete]");
@@ -620,7 +780,11 @@ $("restaurantSearch").addEventListener("input",renderRestaurants);
 $("manageSearch").addEventListener("input",renderManage);
 $("visitSearch").addEventListener("input",renderVisits);
 $("searchVisits").addEventListener("click",renderVisits);
-$("clearVisits").addEventListener("click",()=>{["visitSearch","visitFrom","visitTo"].forEach(id=>$(id).value="");renderVisits()});
+$("clearVisits").addEventListener("click",()=>{
+ setDefaultDates();
+ $("visitSearch").value="";
+ renderVisits();
+});
 $("buildReport").addEventListener("click",buildReport);
 $("resetReport").addEventListener("click",resetReport);
 $("addRestaurant").addEventListener("click",()=>openModal());
@@ -630,8 +794,8 @@ $("cancelModal").addEventListener("click",closeModal);
 $("modalBg").addEventListener("click",e=>{if(e.target===$("modalBg"))closeModal()});
 $("excelVisits").addEventListener("click",()=>exportExcel(filteredVisits()));
 $("excelReport").addEventListener("click",()=>exportExcel(reportResults));
-$("printVisits").addEventListener("click",()=>printTable("سجل زيارات المطاعم",filteredVisits()));
-$("printReport").addEventListener("click",()=>printTable("تقرير زيارات المطاعم",reportResults));
+$("printVisits").addEventListener("click",()=>exportPDF("سجل زيارات المطاعم",filteredVisits()));
+$("printReport").addEventListener("click",()=>exportPDF("تقرير زيارات المطاعم",reportResults));
 $("backupButton").addEventListener("click",backupJSON);
 $("restoreFile").addEventListener("change",e=>{if(e.target.files[0])restoreJSON(e.target.files[0]);e.target.value=""});
 $("soundButton").addEventListener("click",()=>{
