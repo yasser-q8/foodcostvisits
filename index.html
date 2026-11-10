@@ -110,6 +110,7 @@ tbody tr:last-child td{border-bottom:0}
   <button class="active" data-page="dashboard">لوحة التحكم</button>
   <button data-page="visits">سجل الزيارات</button>
   <button data-page="reports">التقارير</button>
+  <button data-page="geo">إحداثيات المواقع</button>
   <button data-page="manage">إدارة المطاعم</button>
   <button data-page="backup">النسخ الاحتياطي والمزامنة</button>
  </nav>
@@ -124,7 +125,7 @@ tbody tr:last-child td{border-bottom:0}
 
   <div class="panel">
    <div class="panel-title">
-    <div><h2>تسجيل زيارة مطعم</h2><div class="sub">الضغطة الأولى لتسجيل الدخول والثانية لتسجيل الخروج (مزامنة فورية عبر Firebase)</div></div>
+    <div><h2>تسجيل زيارة مطعم</h2><div class="sub">منع فتح أكثر من مطعم بنفس اللحظة للمشرف الواحد مع حفظ الإحداثيات الجغرافية</div></div>
     <span class="status open" id="syncStatusIndicator">● جاري الاتصال بـ Firebase...</span>
    </div>
    <div class="toolbar">
@@ -192,6 +193,30 @@ tbody tr:last-child td{border-bottom:0}
    <div class="table-wrap"><table>
     <thead><tr><th>#</th><th>المطعم</th><th>مدير المنطقة</th><th>مدير التشغيل</th><th>منفّذ الزيارة</th><th>تاريخ الدخول</th><th>وقت الدخول</th><th>تاريخ الخروج</th><th>وقت الخروج</th><th>المدة</th><th>الحالة</th><th>حذف</th></tr></thead>
     <tbody id="reportRows"></tbody>
+   </table></div>
+  </div>
+ </section>
+
+ <!-- صفحة إحداثيات المواقع السرية المؤمنة -->
+ <section id="geo" class="page hidden">
+  <div class="panel" id="geoAuthPanel">
+   <h2>إحداثيات المواقع الجغرافية (محمية بكلمة مرور)</h2>
+   <p>هذه الصفحة تعرض إحداثيات GPS وقت تسجيل الزيارة للتحقق من تواجد المشرفين في الميدان.</p>
+   <div class="field" style="max-width:350px; margin-bottom:12px;">
+    <label>أدخل كلمة المرور للوصول للإحداثيات</label>
+    <input type="password" id="geoPasswordInput" placeholder="أدخل كلمة المرور" autocomplete="current-password">
+   </div>
+   <button class="btn primary" id="unlockGeoBtn">فتح الصفحة</button>
+  </div>
+  
+  <div class="panel hidden" id="geoContentPanel">
+   <div class="panel-title">
+    <h2>سجل إحداثيات زيارات المطاعم (GPS)</h2>
+    <button class="btn soft" id="lockGeoBtn">قفل الصفحة</button>
+   </div>
+   <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>المطعم</th><th>منفّذ الزيارة</th><th>تاريخ ووقت الدخول</th><th>خط العرض (Lat)</th><th>خط الطول (Lng)</th><th>رابط الخريطة</th></tr></thead>
+    <tbody id="geoRows"></tbody>
    </table></div>
   </div>
  </section>
@@ -402,7 +427,7 @@ onValue(ref(db_fb, 'naifVisitsData'), (snapshot) => {
  }
 }, (error) => {
  const ind = document.getElementById("syncStatusIndicator");
- if(ind) ind.textContent = "● غير متصل (محلي)";
+ if(ind) ind.textContent = "● إعادة محاولة الاتصال...";
 });
 
 function $(id){return document.getElementById(id)}
@@ -431,15 +456,24 @@ function fmtTime(t){
  return t;
 }
 
-function fmtDate(s){if(!s)return "—";let a=s.split("-");return a[2]+"/"+a[1]+"/"+a[0]}
+function fmtDate(s){
+ if(!s)return "—";
+ let a=s.split("-");
+ if(a.length>=3) return a[2]+"/"+a[1]+"/"+a[0];
+ return s;
+}
+
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function toast(s){let t=$("toast");t.textContent=s;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2600)}
 function visitorName(){return $("visitorName").value.trim()}
 
-// البحث عن أي زيارة مفتوحة بالمطعم
+function getOpenVisitForUser(visitorName){
+ if(!visitorName) return null;
+ return window.db_app.visits.find(v => v.visitor.toLowerCase() === visitorName.toLowerCase() && !v.exitAt);
+}
+
 function activeVisit(name){return window.db_app.visits.find(v=>v.restaurant===name&&!v.exitAt)}
 
-// البحث عن زيارة مفتوحة للمطعم تخص هذا الزائر تحديداً
 function activeVisitByUser(name, visitor){
  if(!visitor) return null;
  return window.db_app.visits.find(v=>v.restaurant===name && v.visitor.toLowerCase()===visitor.toLowerCase() && !v.exitAt);
@@ -477,35 +511,48 @@ function visitRestaurant(name){
  const now = new Date();
 
  if(openUser){
-  // تسجيل الخروج الخاص بالزائر الحالي
   openUser.exitAt=now.toISOString();openUser.exitDate=dateString(now);openUser.exitTime=timeString(now);
   saveDB();toast("تم تسجيل الخروج من "+name);
+  renderAll();
  } else if(openAny) {
-  // إذا كان هناك زيارة مفتوحة لم شخص آخر، يتم تقديم تأكيد
-  if(confirm(`المطعم مزار حالياً بواسطة (${openAny.visitor}). هل تريد تسجيل خروج لـ (${openAny.visitor}) أم تسجيل دخول جديد بأسِمك؟\n\n- اضغط OK لتسجيل الخروج لـ (${openAny.visitor})\n- اضغط Cancel لتسجيل دخول جديد بأسِمك`)){
+  if(openAny.visitor.toLowerCase() === who.toLowerCase()){
    openAny.exitAt=now.toISOString();openAny.exitDate=dateString(now);openAny.exitTime=timeString(now);
    saveDB();toast("تم تسجيل الخروج من "+name);
+   renderAll();
   } else {
-   const r=window.db_app.restaurants.find(x=>x.name===name);
-   window.db_app.visits.unshift({
-    id:Date.now()+"_"+Math.random().toString(16).slice(2),
-    restaurant:name,area:r?.area||"",ops:r?.ops||"",visitor:who,
-    entryAt:now.toISOString(),entryDate:dateString(now),entryTime:timeString(now),
-    exitAt:"",exitDate:"",exitTime:"",alerted:false
-   });
-   saveDB();toast("تم تسجيل الدخول إلى "+name);
+   toast(`تنبيه: المطعم مزار حالياً بواسطة (${openAny.visitor}). لا يمكن التسجيل فوقه.`);
   }
  } else {
-  // تسجيل دخول جديد بالكامل
-  const r=window.db_app.restaurants.find(x=>x.name===name);
-  window.db_app.visits.unshift({
-   id:Date.now()+"_"+Math.random().toString(16).slice(2),
-   restaurant:name,area:r?.area||"",ops:r?.ops||"",visitor:who,
-   entryAt:now.toISOString(),entryDate:dateString(now),entryTime:timeString(now),
-   exitAt:"",exitDate:"",exitTime:"",alerted:false
-  });
-  saveDB();toast("تم تسجيل الدخول إلى "+name);
+  const otherOpen = getOpenVisitForUser(who);
+  if(otherOpen){
+   toast(`لديك زيارة مفتوحة بالفعل في (${otherOpen.restaurant}). يجب تسجيل الخروج منها أولاً.`);
+   return;
+  }
+
+  if(navigator.geolocation){
+   navigator.geolocation.getCurrentPosition(pos => {
+    createNewVisit(name, who, pos.coords.latitude, pos.coords.longitude);
+   }, err => {
+    createNewVisit(name, who, null, null);
+   }, {timeout: 5000});
+  } else {
+   createNewVisit(name, who, null, null);
+  }
  }
+}
+
+function createNewVisit(name, who, lat, lng){
+ const now = new Date();
+ const r=window.db_app.restaurants.find(x=>x.name===name);
+ window.db_app.visits.unshift({
+  id:Date.now()+"_"+Math.random().toString(16).slice(2),
+  restaurant:name,area:r?.area||"",ops:r?.ops||"",visitor:who,
+  entryAt:now.toISOString(),entryDate:dateString(now),entryTime:timeString(now),
+  exitAt:"",exitDate:"",exitTime:"",alerted:false,
+  lat: lat, lng: lng
+ });
+ saveDB();
+ toast("تم تسجيل الدخول إلى "+name);
  renderAll();
 }
 
@@ -542,7 +589,6 @@ function renderRestaurants(){
  const colors=["#edf6ff","#f0f6ff","#edf8f5","#f5f1ff","#fff6e9","#eef7f8"];
  let items=window.db_app.restaurants.filter(r=>r.name.toLowerCase().includes(q));
  
- // ترتيب المطاعم: أولاً المطعم الذي فيه زيارة مفتوحة للزائر المكتوب اسمه، ثم أي مطعم فيه زيارة مفتوحة عموماً
  items.sort((a,b)=>{
   const aUser = activeVisitByUser(a.name, curVisitor) ? 2 : (activeVisit(a.name) ? 1 : 0);
   const bUser = activeVisitByUser(b.name, curVisitor) ? 2 : (activeVisit(b.name) ? 1 : 0);
@@ -614,6 +660,23 @@ function resetReport(){
  ["repArea","repOps","repRestaurant","repVisitor"].forEach(id=>$(id).value="");
  setDefaultDates();buildReport();
 }
+
+function renderGeoRows(){
+ const arr = window.db_app.visits;
+ $("geoRows").innerHTML = arr.map((v,i)=>{
+  const mapLink = (v.lat && v.lng) ? `<a href="https://maps.google.com/?q=${v.lat},${v.lng}" target="_blank" style="color:#2563eb; font-weight:bold;">عرض على الخريطة</a>` : "—";
+  return `<tr>
+   <td>${i+1}</td>
+   <td>${esc(v.restaurant)}</td>
+   <td>${esc(v.visitor)}</td>
+   <td class="ltr">${fmtDate(v.entryDate)} ${fmtTime(v.entryTime)}</td>
+   <td class="ltr">${v.lat ? v.lat.toFixed(5) : "—"}</td>
+   <td class="ltr">${v.lng ? v.lng.toFixed(5) : "—"}</td>
+   <td>${mapLink}</td>
+  </tr>`;
+ }).join("") || '<tr><td colspan="7" class="empty">لا توجد سجلات إحداثيات</td></tr>';
+}
+
 function renderManage(){
  const q=$("manageSearch").value.trim().toLowerCase();
  const arr=window.db_app.restaurants.filter(r=>r.name.toLowerCase().includes(q));
@@ -629,7 +692,7 @@ function renderStats(){
  $("statAll").textContent=window.db_app.visits.length;
 }
 function renderAll(){
- renderStats();renderRestaurants();renderRecent();renderVisits();renderManage();buildReport();
+ renderStats();renderRestaurants();renderRecent();renderVisits();renderManage();buildReport();renderGeoRows();
 }
 function showPage(id){
  document.querySelectorAll(".page").forEach(x=>x.classList.add("hidden"));
@@ -638,6 +701,7 @@ function showPage(id){
  if(id==="reports")buildReport();
  if(id==="visits")renderVisits();
  if(id==="manage")renderManage();
+ if(id==="geo")renderGeoRows();
  window.scrollTo({top:0,behavior:"smooth"});
 }
 function openModal(name=null){
@@ -687,7 +751,6 @@ function exportExcel(arr){
 }
 
 function exportPDF(title, arr){
- // إعداد أسطر الجدول بالتناوب بين الأزرق الفاتح والأبيض
  const rows=arr.map((v,i)=>{
   const bg = (i % 2 === 0) ? "#f4f9ff" : "#ffffff";
   return `<tr style="background-color: ${bg};">
@@ -839,6 +902,7 @@ function tick(){
  $("liveDate").textContent=dateString(d).split("-").reverse().join("/");
  $("liveClock").textContent=timeString(d);
 }
+
 document.addEventListener("click",e=>{
  const restaurant=e.target.closest("[data-restaurant]");
  if(restaurant){visitRestaurant(restaurant.dataset.restaurant);return}
@@ -887,6 +951,27 @@ $("passwordModalBg").addEventListener("click", e => { if(e.target === $("passwor
 $("deletePasswordInput").addEventListener("keydown", e => {
  if(e.key === "Enter") confirmDeleteVisit();
  if(e.key === "Escape") closePasswordModal();
+});
+
+$("unlockGeoBtn").addEventListener("click", () => {
+ const pass = $("geoPasswordInput").value;
+ if(pass === "123321"){
+  $("geoAuthPanel").classList.add("hidden");
+  $("geoContentPanel").classList.remove("hidden");
+  renderGeoRows();
+  toast("تم فتح صفحة الإحداثيات بنجاح");
+ } else {
+  alert("كلمة المرور غير صحيحة!");
+  $("geoPasswordInput").focus();
+ }
+});
+$("geoPasswordInput").addEventListener("keydown", e => {
+ if(e.key === "Enter") $("unlockGeoBtn").click();
+});
+$("lockGeoBtn").addEventListener("click", () => {
+ $("geoContentPanel").classList.add("hidden");
+ $("geoAuthPanel").classList.remove("hidden");
+ $("geoPasswordInput").value = "";
 });
 
 $("excelVisits").addEventListener("click",()=>exportExcel(filteredVisits()));
