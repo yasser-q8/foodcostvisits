@@ -5,7 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#05668D">
 <title>نظام زيارات المطاعم - شركة نايف للأغذية</title>
-<link rel="icon" href="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg">
+
+<!-- أيقونة الموقع العادية والآيفون -->
+<link rel="icon" href="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" type="image/jpeg">
+<link rel="apple-touch-icon" href="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg">
+<link rel="apple-touch-icon" sizes="152x152" href="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg">
+<link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg">
+<link rel="apple-touch-icon" sizes="167x167" href="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg">
+
+<!-- إعدادات إختصار آيفون والـ iOS Home Screen -->
+<meta name="apple-mobile-web-app-title" content="زيارات نايف">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="application-name" content="Naif Visits">
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
@@ -54,12 +67,12 @@ input:focus,select:focus{border-color:#5797d0;box-shadow:0 0 0 3px #5797d01c}
 .rname{font-size:15px;font-weight:bold;line-height:1.5}
 .meta{display:flex;justify-content:space-between;gap:5px;font-size:11px;color:#617789;flex-wrap:wrap}
 .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:11px}
-table{width:100%;border-collapse:collapse;min-width:850px}
-th,td{padding:11px;text-align:right;border-bottom:1px solid #eaf0f5;white-space:nowrap}
+table{width:100%;border-collapse:collapse;min-width:1000px}
+th,td{padding:11px;text-align:center !important;border-bottom:1px solid #eaf0f5;white-space:nowrap}
 th{background:#f1f6fa;color:#53697b;font-size:12px}
 td{font-size:13px}
 tbody tr:last-child td{border-bottom:0}
-.ltr{direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
+.ltr{direction:ltr;text-align:center;font-variant-numeric:tabular-nums}
 .status{display:inline-block;border-radius:20px;padding:5px 9px;font-size:11px;font-weight:bold}
 .status.open{background:#fff0d3;color:#966014}.status.done{background:#e5f6eb;color:#267449}
 .empty{text-align:center;color:#8a9aaa;padding:25px}
@@ -243,7 +256,7 @@ tbody tr:last-child td{border-bottom:0}
  </div>
 </div>
 
-<!-- Modal إدخال كلمة المرور لحذف السجل (مخفية الحروف) -->
+<!-- Modal إدخال كلمة المرور لحذف السجل -->
 <div id="passwordModalBg" class="modal-bg hidden">
  <div class="modal" style="max-width:380px;">
   <h3>تأكيد حذف السجل</h3>
@@ -418,9 +431,7 @@ function timeString(d=new Date()){
 
 function fmtTime(t){
  if(!t)return "—";
- // تحويل التنسيقات القديمة إلى الاختصار الجديد ص / م
- let formatted = t.replace("مساءً", "م").replace("صباحاً", "ص").replace("مساء", "م").replace("صباح", "ص");
- return formatted;
+ return t.replace("مساءً", "م").replace("صباحاً", "ص").replace("مساء", "م").replace("صباح", "ص");
 }
 
 function fmtDate(s){
@@ -436,9 +447,10 @@ function duration(v){
  let mins=Math.max(0,Math.floor(ms/60000));
  let hrs = Math.floor(mins/60);
  let mrem = mins % 60;
- if(hrs > 0 && mrem > 0) return hrs+"س "+mrem+"د";
- if(hrs > 0) return hrs+"س";
- return mrem+"د";
+ 
+ if(hrs > 0 && mrem > 0) return hrs + " ساعة و " + mrem + " دقيقة";
+ if(hrs > 0) return hrs === 1 ? "ساعة واحدة" : (hrs === 2 ? "ساعتان" : hrs + " ساعات");
+ return mrem + " دقيقة";
 }
 
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -499,7 +511,6 @@ function visitRestaurant(name){
    toast(`لديك زيارة مفتوحة بالفعل في (${otherOpen.restaurant}). يجب تسجيل الخروج منها أولاً.`);
    return;
   }
-  // تسجيل الدخول مباشرة وبسرعة فائقة بدون خدمات GPS الثقيلة
   createNewVisit(name, who);
  }
 }
@@ -584,15 +595,31 @@ function renderRestaurants(){
 }
 
 function visitRow(v,i){
- return `<tr><td>${i+1}</td><td>${esc(v.restaurant)}</td><td>${esc(v.area)}</td><td>${esc(v.ops)}</td><td>${esc(v.visitor)}</td>
- <td class="ltr">${fmtDate(v.entryDate)} ${fmtTime(v.entryTime)}</td>
- <td class="ltr">${fmtDate(v.exitDate)} ${fmtTime(v.exitTime)}</td><td>${duration(v)}
- </td><td><span class="status ${v.exitAt?"done":"open"}">${v.exitAt?"مكتملة":"مفتوحة"}</span></td>
- <td><button class="btn danger btn-sm" data-deletevisit="${esc(v.id)}">حذف</button></td></tr>`;
+ return `<tr>
+  <td>${i+1}</td>
+  <td>${esc(v.restaurant)}</td>
+  <td>${esc(v.area)}</td>
+  <td>${esc(v.ops)}</td>
+  <td>${esc(v.visitor)}</td>
+  <td class="ltr">${fmtDate(v.entryDate)}</td>
+  <td class="ltr">${fmtTime(v.entryTime)}</td>
+  <td class="ltr">${fmtDate(v.exitDate)}</td>
+  <td class="ltr">${fmtTime(v.exitTime)}</td>
+  <td>${duration(v)}</td>
+  <td><span class="status ${v.exitAt?"done":"open"}">${v.exitAt?"مكتملة":"مفتوحة"}</span></td>
+  <td><button class="btn danger btn-sm" data-deletevisit="${esc(v.id)}">حذف</button></td>
+ </tr>`;
 }
 
 function renderRecent(){
- $("recentRows").innerHTML=window.db_app.visits.slice(0,7).map((v,i)=>`<tr><td>${esc(v.restaurant)}</td><td>${esc(v.visitor)}</td><td>${fmtDate(v.entryDate)}</td><td class="ltr">${fmtTime(v.entryTime)}</td><td class="ltr">${fmtTime(v.exitTime)}</td><td><span class="status ${v.exitAt?"done":"open"}">${v.exitAt?"مكتملة":"مفتوحة"}</span></td></tr>`).join("")||'<tr><td colspan="6" class="empty">لا توجد زيارات بعد</td></tr>';
+ $("recentRows").innerHTML=window.db_app.visits.slice(0,7).map((v,i)=>`<tr>
+  <td>${esc(v.restaurant)}</td>
+  <td>${esc(v.visitor)}</td>
+  <td class="ltr">${fmtDate(v.entryDate)}</td>
+  <td class="ltr">${fmtTime(v.entryTime)}</td>
+  <td class="ltr">${fmtTime(v.exitTime)}</td>
+  <td><span class="status ${v.exitAt?"done":"open"}">${v.exitAt?"مكتملة":"مفتوحة"}</span></td>
+ </tr>`).join("")||'<tr><td colspan="6" class="empty">لا توجد زيارات بعد</td></tr>';
 }
 
 function filteredVisits(){
@@ -601,7 +628,7 @@ function filteredVisits(){
 }
 function renderVisits(){
  const arr=filteredVisits();
- $("visitRows").innerHTML=arr.map(visitRow).join("")||'<tr><td colspan="10" class="empty">لا توجد زيارات مطابقة</td></tr>';
+ $("visitRows").innerHTML=arr.map(visitRow).join("")||'<tr><td colspan="12" class="empty">لا توجد زيارات مطابقة</td></tr>';
  $("visitCount").textContent="عدد السجلات: "+arr.length;
 }
 function buildReport(){
@@ -616,7 +643,7 @@ function buildReport(){
  $("repTotal").textContent=reportResults.length;
  $("repDone").textContent=reportResults.filter(v=>v.exitAt).length;
  $("repOpen").textContent=reportResults.filter(v=>!v.exitAt).length;
- $("reportRows").innerHTML=reportResults.map(visitRow).join("")||'<tr><td colspan="10" class="empty">لا توجد نتائج مطابقة</td></tr>';
+ $("reportRows").innerHTML=reportResults.map(visitRow).join("")||'<tr><td colspan="12" class="empty">لا توجد نتائج مطابقة</td></tr>';
 }
 function resetReport(){
  ["repArea","repOps","repRestaurant","repVisitor"].forEach(id=>$(id).value="");
@@ -685,12 +712,12 @@ function exportExcel(arr){
  if(typeof XLSX==="undefined"){alert("تعذر تحميل مكتبة Excel. تأكد من الاتصال بالإنترنت ثم أعد المحاولة.");return}
  const rows=arr.map((v,i)=>({
   "#":i+1,"المطعم":v.restaurant,"مدير المنطقة":v.area,"مدير التشغيل":v.ops,
-  "منفذ الزيارة":v.visitor,"الدخول":fmtDate(v.entryDate)+" "+fmtTime(v.entryTime),
-  "الخروج":v.exitDate?(fmtDate(v.exitDate)+" "+fmtTime(v.exitTime)):"—",
+  "منفذ الزيارة":v.visitor,"تاريخ الدخول":fmtDate(v.entryDate),"وقت الدخول":fmtTime(v.entryTime),
+  "تاريخ الخروج":v.exitDate?fmtDate(v.exitDate):"—","وقت الخروج":v.exitDate?fmtTime(v.exitTime):"—",
   "المدة":duration(v),"الحالة":v.exitAt?"مكتملة":"مفتوحة"
  }));
  const ws=XLSX.utils.json_to_sheet(rows);
- ws["!cols"]=[{wch:6},{wch:26},{wch:18},{wch:18},{wch:20},{wch:18},{wch:18},{wch:14},{wch:12}];
+ ws["!cols"]=[{wch:6},{wch:26},{wch:18},{wch:18},{wch:20},{wch:14},{wch:14},{wch:14},{wch:14},{wch:22},{wch:12}];
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Visits");
  XLSX.writeFile(wb,"Naif_Restaurant_Visits.xlsx");
 }
@@ -700,12 +727,14 @@ function exportPDF(title, arr){
   const bg = (i % 2 === 0) ? "#f4f9ff" : "#ffffff";
   return `<tr style="background-color: ${bg};">
    <td style="border:1px solid #c8d9e6; padding:3px; text-align:center;">${i+1}</td>
-   <td style="border:1px solid #c8d9e6; padding:3px; font-weight:bold;">${esc(v.restaurant)}</td>
-   <td style="border:1px solid #c8d9e6; padding:3px;">${esc(v.area)}</td>
-   <td style="border:1px solid #c8d9e6; padding:3px;">${esc(v.ops)}</td>
-   <td style="border:1px solid #c8d9e6; padding:3px;">${esc(v.visitor)}</td>
-   <td style="border:1px solid #c8d9e6; padding:3px; text-align:center; direction:ltr;">${fmtDate(v.entryDate)} ${fmtTime(v.entryTime)}</td>
-   <td style="border:1px solid #c8d9e6; padding:3px; text-align:center; direction:ltr;">${v.exitDate ? (fmtDate(v.exitDate)+" "+fmtTime(v.exitTime)) : "—"}</td>
+   <td style="border:1px solid #c8d9e6; padding:3px; text-align:center; font-weight:bold;">${esc(v.restaurant)}</td>
+   <td style="border:1px solid #c8d9e6; padding:3px; text-align:center;">${esc(v.area)}</td>
+   <td style="border:1px solid #c8d9e6; padding:3px; text-align:center;">${esc(v.ops)}</td>
+   <td style="border:1px solid #c8d9e6; padding:3px; text-align:center;">${esc(v.visitor)}</td>
+   <td style="border:1px solid #c8d9e6; padding:3px; text-align:center;">${fmtDate(v.entryDate)}</td>
+   <td style="border:1px solid #c8d9e6; padding:3px; text-align:center; direction:ltr;">${fmtTime(v.entryTime)}</td>
+   <td style="border:1px solid #c8d9e6; padding:3px; text-align:center;">${v.exitDate ? fmtDate(v.exitDate) : "—"}</td>
+   <td style="border:1px solid #c8d9e6; padding:3px; text-align:center; direction:ltr;">${v.exitDate ? fmtTime(v.exitTime) : "—"}</td>
    <td style="border:1px solid #c8d9e6; padding:3px; text-align:center; font-weight:bold;">${duration(v)}</td>
   </tr>`;
  }).join("");
@@ -725,18 +754,20 @@ function exportPDF(title, arr){
    </div>
   </div>
   <h2 style="text-align:center; margin:6px 0; font-size:14px; color:#1e293b;">${title}</h2>
-  <p style="font-size:9px; margin-bottom:6px; color:#475569;">الفترة: ${$("repFrom")&&$("repFrom").value?fmtDate($("repFrom").value):"—"} إلى ${$("repTo")&&$("repTo").value?fmtDate($("repTo").value):"—"}</p>
+  <p style="font-size:9px; margin-bottom:6px; color:#475569; text-align:center;">الفترة: ${$("repFrom")&&$("repFrom").value?fmtDate($("repFrom").value):"—"} إلى ${$("repTo")&&$("repTo").value?fmtDate($("repTo").value):"—"}</p>
   <table style="width:100%; border-collapse:collapse; font-size:7.5px; table-layout:fixed;">
    <thead>
     <tr style="background:#05668D; color:#ffffff;">
-     <th style="border:1px solid #a71919; padding:4px; width:4%;">#</th>
-     <th style="border:1px solid #a71919; padding:4px; width:20%;">المطعم</th>
-     <th style="border:1px solid #a71919; padding:4px; width:13%;">مدير المنطقة</th>
-     <th style="border:1px solid #a71919; padding:4px; width:13%;">مدير التشغيل</th>
-     <th style="border:1px solid #a71919; padding:4px; width:15%;">منفذ الزيارة</th>
-     <th style="border:1px solid #a71919; padding:4px; width:15%;">الدخول</th>
-     <th style="border:1px solid #a71919; padding:4px; width:15%;">الخروج</th>
-     <th style="border:1px solid #a71919; padding:4px; width:9%;">المدة</th>
+     <th style="border:1px solid #a71919; padding:4px; width:4%; text-align:center;">#</th>
+     <th style="border:1px solid #a71919; padding:4px; width:16%; text-align:center;">المطعم</th>
+     <th style="border:1px solid #a71919; padding:4px; width:11%; text-align:center;">مدير المنطقة</th>
+     <th style="border:1px solid #a71919; padding:4px; width:11%; text-align:center;">مدير التشغيل</th>
+     <th style="border:1px solid #a71919; padding:4px; width:13%; text-align:center;">منفذ الزيارة</th>
+     <th style="border:1px solid #a71919; padding:4px; width:11%; text-align:center;">تاريخ الدخول</th>
+     <th style="border:1px solid #a71919; padding:4px; width:9%; text-align:center;">وقت الدخول</th>
+     <th style="border:1px solid #a71919; padding:4px; width:11%; text-align:center;">تاريخ الخروج</th>
+     <th style="border:1px solid #a71919; padding:4px; width:9%; text-align:center;">وقت الخروج</th>
+     <th style="border:1px solid #a71919; padding:4px; width:15%; text-align:center;">المدة</th>
     </tr>
    </thead>
    <tbody>
