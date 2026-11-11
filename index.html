@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#05668D">
+<meta name="theme-color" content="#c62828">
 <title>نظام زيارات المطاعم - شركة نايف للأغذية</title>
 
 <!-- أيقونة الموقع العادية والآيفون -->
@@ -22,7 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-:root{--red:#05668D;--red2:#a71919;--blue:#eaf4ff;--white:#fff;--ink:#263747;--muted:#65798b;--line:#d8e5f0;--green:#18834b;--orange:#f4a321;--shadow:0 5px 20px #24415a12}
+:root{--red:#c62828;--red2:#a71919;--blue:#eaf4ff;--white:#fff;--ink:#263747;--muted:#65798b;--line:#d8e5f0;--green:#18834b;--orange:#f4a321;--shadow:0 5px 20px #24415a12}
 *{box-sizing:border-box}
 body{margin:0;background:var(--blue);color:var(--ink);font-family:Tahoma,Arial,sans-serif;font-size:14px}
 button,input,select{font:inherit}
@@ -300,15 +300,18 @@ const initialRestaurants=[
 {"name":"شرق الاحمدي","area":"محمد حجازي","ops":"هاني عبدالله"},
 {"name":"المطار","area":"ثروت المرجاوي","ops":"طارق بيومي"},
 {"name":"الري","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"الري -2","area":"طارق حمدي","ops":"هاني عبدالله"},
 {"name":"مجمع الكوت","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
 {"name":"مجمع الافنيوز","area":"محمد مرتضى","ops":"طارق بيومي"},
 {"name":"الضباعية","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
 {"name":"الدسمة وبنيد القار","area":"محمد انور","ops":"هاني عبدالله"},
 {"name":"الفحاحيل","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
+{"name":"الفحيحيل -2","area":"عماد عبدالحميد","ops":"هاني عبدالله"},
 {"name":"الفيحاء","area":"وليد صبري","ops":"طارق بيومي"},
 {"name":"الفروانية","area":"مختار محمود","ops":"طارق بيومي"},
 {"name":"الفنطاس","area":"محمد انور","ops":"هاني عبدالله"},
 {"name":"هدية","area":"محمد حجازي","ops":"هاني عبدالله"},
+{"name":"هدية -2","area":"محمد حجازي","ops":"هاني عبدالله"},
 {"name":"حولي الترفيهي","area":"وليد صبري","ops":"طارق بيومي"},
 {"name":"جمعية مدينة جابر الأحمد","area":"ثروت المرجاوي","ops":"طارق بيومي"},
 {"name":"الجابرية تكا و فرايد","area":"طارق حمدي","ops":"هاني عبدالله"},
@@ -338,17 +341,23 @@ const initialRestaurants=[
 {"name":"مدينة صباح الاحمد","area":"محمد حجازي","ops":"هاني عبدالله"},
 {"name":"صباح السالم","area":"محمد انور","ops":"هاني عبدالله"},
 {"name":"صباح السالم - العرين","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"صباح السالم العرين -2","area":"محمد انور","ops":"هاني عبدالله"},
 {"name":"النافورة","area":"طارق حمدي","ops":"هاني عبدالله"},
 {"name":"السندباد","area":"طارق حمدي","ops":"هاني عبدالله"},
 {"name":"شارع البحرين","area":"طارق حمدي","ops":"هاني عبدالله"},
 {"name":"سيد ياسين","area":"طارق حمدي","ops":"هاني عبدالله"},
+{"name":"سيد ياسين -2","area":"طارق حمدي","ops":"هاني عبدالله"},
 {"name":"سلوى","area":"محمد انور","ops":"هاني عبدالله"},
 {"name":"الشرق","area":"محمد انور","ops":"هاني عبدالله"},
+{"name":"الشرق -2","area":"محمد انور","ops":"هاني عبدالله"},
 {"name":"جمعية الشهداء","area":"وليد صبري","ops":"طارق بيومي"},
 {"name":"الشويخ واره","area":"ثروت المرجاوي","ops":"طارق بيومي"},
 {"name":"اسواق القرين","area":"محمد مرتضى","ops":"طارق بيومي"},
+{"name":"أسواق القرين -2","area":"محمد مرتضى","ops":"طارق بيومي"},
 {"name":"جمعية الصليبية","area":"مختار محمود","ops":"طارق بيومي"},
+{"name":"جمعية الصليبية -2","area":"مختار محمود","ops":"طارق بيومي"},
 {"name":"نادي الصليبخات","area":"ثروت المرجاوي","ops":"طارق بيومي"},
+{"name":"الصليبخات -2","area":"ثروت المرجاوي","ops":"طارق بيومي"},
 {"name":"الصليبية","area":"مختار محمود","ops":"طارق بيومي"},
 {"name":"جمعية الوفرة","area":"محمد حجازي","ops":"هاني عبدالله"},
 {"name":"غرب أبو فطيرة الحرفية","area":"محمد مرتضى","ops":"طارق بيومي"},
@@ -697,7 +706,10 @@ function deleteRestaurant(){
  if(!confirm("هل تريد حذف المطعم "+name+" من قائمة المطاعم؟ ستبقى الزيارات السابقة محفوظة في السجل."))return;
  if(activeVisit(name)){toast("لا يمكن حذف مطعم لديه زيارة مفتوحة");return}
  window.db_app.restaurants=window.db_app.restaurants.filter(r=>r.name!==name);
- saveDB();closeModal();renderAll();toast("تم حذف المطعم");
+ saveDB();
+ closeModal();
+ renderAll();
+ toast("تم حذف المطعم وتحديثه سحابياً");
 }
 function exportExcel(arr){
  if(typeof XLSX==="undefined"){alert("تعذر تحميل مكتبة Excel. تأكد من الاتصال بالإنترنت ثم أعد المحاولة.");return}
@@ -737,10 +749,10 @@ function exportPDF(title, arr){
  container.style.background = "#fff";
  container.style.color = "#222";
  container.innerHTML = `
-  <div style="display:flex; align-items:center; gap:10px; border-bottom:2px solid #05668D; padding-bottom:6px; margin-bottom:8px;">
+  <div style="display:flex; align-items:center; gap:10px; border-bottom:2px solid #c62828; padding-bottom:6px; margin-bottom:8px;">
    <img src="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" style="width:38px; height:38px; object-fit:contain;">
    <div>
-    <h3 style="margin:0; font-size:13px; color:#05668D;">شركة نايف للأغذية</h3>
+    <h3 style="margin:0; font-size:13px; color:#c62828;">شركة نايف للأغذية</h3>
     <div style="font-size:9.5px; color:#555;">نظام تسجيل زيارات المطاعم</div>
    </div>
   </div>
@@ -748,7 +760,7 @@ function exportPDF(title, arr){
   <p style="font-size:9px; margin-bottom:6px; color:#475569; text-align:center;">الفترة: ${$("repFrom")&&$("repFrom").value?fmtDate($("repFrom").value):"—"} إلى ${$("repTo")&&$("repTo").value?fmtDate($("repTo").value):"—"}</p>
   <table style="width:100%; border-collapse:collapse; font-size:7.5px; table-layout:fixed;">
    <thead>
-    <tr style="background:#05668D; color:#ffffff;">
+    <tr style="background:#c62828; color:#ffffff;">
      <th style="border:1px solid #a71919; padding:4px; width:4%; text-align:center;">#</th>
      <th style="border:1px solid #a71919; padding:4px; width:16%; text-align:center;">المطعم</th>
      <th style="border:1px solid #a71919; padding:4px; width:11%; text-align:center;">مدير المنطقة</th>
